@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DAMAC snagging pilot &mdash; activity log</title>
+<meta name="description" content="Time and effort logged for each unit in the DAMAC x CONXAI snagging pilot.">
+<style>
+:root{
+  --page:#eef0ee; --surface:#ffffff; --panel:#f7f8f7;
+  --ink:#14171a; --ink2:#4d545c; --muted:#858d95;
+  --line:#dcdfdc; --line2:#eaece9;
+  --c-qa:#8a5cc4; --c-mep:#2f6ea8; --c-cap:#2f6f4f; --c-proc:#c98a1e;
+  --warn:#a2373f;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--page);color:var(--ink);
+  font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,"Roboto Mono",monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:34px 22px 90px}
+
+.top{padding-bottom:18px;border-bottom:2px solid var(--ink);margin-bottom:22px}
+.top-inner{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;justify-content:space-between}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  font-weight:700;margin:0 0 7px}
+h1{font-size:34px;line-height:1.05;margin:0;letter-spacing:-.02em;font-weight:680}
+.subline{color:var(--ink2);font-size:13.5px;margin:9px 0 0;max-width:60ch}
+.provenance{text-align:right;font-size:12px;color:var(--muted);line-height:1.75;flex:none}
+.provenance b{color:var(--ink2);font-weight:600}
+.wordmark{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;
+  letter-spacing:.16em;font-size:13px;color:var(--ink);margin:0 0 10px}
+
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  margin-bottom:26px}
+.strip>div{background:var(--surface);padding:14px 16px}
+.strip .k,.tile .k{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);font-weight:650;line-height:1.35}
+.tile .k{min-height:2.7em}
+.strip .v{display:block;font-size:21px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.strip .v .sm{font-size:14.5px;letter-spacing:-.01em;white-space:nowrap}
+.strip .s{display:block;font-size:11.6px;color:var(--ink2);margin-top:3px}
+
+.filters{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:20px;
+  position:sticky;top:0;z-index:5;background:var(--page);padding:10px 0 11px}
+.filters::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--line)}
+.flabel{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:650}
+.chips{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:8px;
+  overflow:hidden;background:var(--surface)}
+.chip{font:inherit;font-size:12.5px;padding:8px 13px;border:none;background:none;cursor:pointer;
+  color:var(--ink2);border-right:1px solid var(--line)}
+.chip:last-child{border-right:none}
+.chip:hover{background:var(--panel);color:var(--ink)}
+.chip[aria-selected="true"]{background:var(--ink);color:#fff;font-weight:600}
+.chip:focus-visible{outline:2px solid #1b6fc4;outline-offset:-2px}
+.showing{font-size:12.5px;color:var(--muted);margin-left:auto}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;
+  margin-bottom:20px}
+.card-head{margin-bottom:14px}
+h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
+.card-sub{color:var(--ink2);font-size:12.8px;margin:5px 0 0}
+
+.uhead{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
+  padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.uname h3{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em}
+.usub{color:var(--ink2);font-size:12.8px;margin:5px 0 0}
+.usub b{color:var(--ink);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(124px,1fr));gap:9px;flex:0 1 470px}
+.tile{background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:10px 12px}
+.tile .v{display:block;font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:3px}
+.tile .s{display:block;font-size:11.2px;color:var(--ink2);margin-top:3px;line-height:1.45}
+
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:12px}
+.phase{border:1px solid var(--line2);border-radius:10px;padding:0 13px 12px;
+  border-top:3px solid var(--line);background:var(--surface)}
+.ph-qa{border-top-color:var(--c-qa)} .ph-mep{border-top-color:var(--c-mep)}
+.ph-cap{border-top-color:var(--c-cap)} .ph-proc{border-top-color:var(--c-proc)}
+.phase.is-empty{background:var(--panel);border-top-color:var(--line)}
+.phase header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  padding:12px 0 9px;border-bottom:1px solid var(--line2);margin-bottom:9px}
+.phase h4{font-size:12.5px;margin:0;font-weight:670;letter-spacing:-.005em}
+.pill{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:2px 7px;border-radius:5px;flex:none}
+.pf-onsite{background:#eef1f4;color:#41525f;border:1px solid #dbe2e8}
+.pf-conxai{background:#14171a;color:#fff}
+.phase dl{margin:0;display:flex;flex-direction:column}
+.phase dl>div{display:flex;gap:10px;align-items:baseline;justify-content:space-between;
+  padding:5px 0;border-top:1px solid #f2f3f2}
+.phase dl>div:first-child{border-top:none}
+.phase dt{font-size:11.8px;color:var(--muted);flex:none}
+.phase dd{margin:0;font-size:12.6px;text-align:right;color:var(--ink2)}
+.phase dd.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}
+.phase dd.strong{font-weight:700}
+.unit-word{color:var(--muted);font-size:11.5px}
+.phase .none{margin:2px 0 4px;font-size:12.6px;color:var(--muted)}
+.phase .none .sub{display:block;font-size:11.5px;margin-top:4px}
+
+.warn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  margin-left:5px;border-radius:50%;background:var(--warn);color:#fff;font-size:9.5px;
+  font-weight:800;vertical-align:middle;cursor:help;position:relative}
+.warn:not([data-tip]){cursor:default}
+.warn[data-tip]:hover::after,.warn[data-tip]:focus::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);
+  left:50%;transform:translateX(-50%);width:max-content;max-width:250px;text-align:left;
+  background:var(--ink);color:#fff;font-size:11.5px;font-weight:400;line-height:1.45;
+  padding:8px 10px;border-radius:7px;z-index:20;pointer-events:none}
+
+.cal-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink2);margin-bottom:12px}
+.cal-legend span{display:flex;align-items:center;gap:6px}
+.cal-legend i,.cal-c i{display:block;border-radius:2px}
+.cal-legend i{width:11px;height:11px}
+.c-qa{background:var(--c-qa)} .c-mep{background:var(--c-mep)}
+.c-cap{background:var(--c-cap)} .c-proc{background:var(--c-proc)}
+.cal-scroll{overflow-x:auto}
+.cal{min-width:520px}
+.cal-row{display:flex;align-items:stretch;gap:10px}
+.cal-u{flex:0 0 76px;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none;
+  display:flex;align-items:center}
+.cal-u:hover{text-decoration:underline}
+.cal-cells{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(28px,1fr);gap:3px;flex:1}
+.cal-head .cal-d{text-align:center;padding-bottom:6px}
+.cal-d .dow{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.cal-d .dnum{display:block;font-family:ui-monospace,monospace;font-size:12px;color:var(--ink2);font-weight:600}
+.cal-d.wknd .dnum,.cal-d.wknd .dow{color:#b3b9be}
+.cal-c{height:26px;border-radius:5px;background:var(--panel);border:1px solid var(--line2);
+  display:flex;gap:2px;align-items:stretch;padding:3px;margin-bottom:5px}
+.cal-c.wknd{background:#f0f1ef}
+.cal-c i{flex:1;min-width:4px}
+.cal-row[hidden]{display:none}
+
+.mxwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
+.mx th,.mx td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
+.mx thead th{position:sticky;top:0;background:var(--panel);font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink2);font-weight:700;border-bottom:1px solid var(--line);z-index:2}
+.mx tbody th{font-weight:500;color:var(--ink2);position:sticky;left:0;background:var(--surface);z-index:1}
+.mx .corner{position:sticky;left:0;background:var(--panel);z-index:3}
+.mx tr.grp th{background:var(--panel);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  font-weight:700;color:var(--ink);position:sticky;left:0}
+.mx td.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.mx td.na{color:var(--muted)}
+.mx tbody tr:hover td{background:#fafbfa}
+
+.notes{margin-top:26px;font-size:12.4px;color:var(--ink2);line-height:1.75}
+.notes h2{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  margin:0 0 8px;font-weight:700}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin-bottom:6px}
+.foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:11.8px;color:var(--muted);line-height:1.7}
+.foot a{color:var(--ink2)}
+
+@media (max-width:720px){
+  .wrap{padding:24px 15px 70px}
+  h1{font-size:27px}
+  .provenance{text-align:left}
+  .tiles{grid-template-columns:repeat(3,minmax(96px,1fr));flex:1 1 100%}
+  .filters{position:static}
+}
+@media print{
+  body{background:#fff} .filters{display:none} .card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <p class="eyebrow">DAMAC &times; CONXAI snagging pilot</p>
+      <h1>Activity log</h1>
+      <p class="subline">What each unit cost in time &mdash; manual QA and MEP snagging onsite,
+      against photo capture and CONXAI processing. One card per unit.</p>
+    </div>
+    <div class="provenance">
+      <p class="wordmark">CONXAI</p>
+      Source <b>Damac snagging schedules &mdash; Activity logs</b><br>
+      Units <b>7</b> &middot; Generated <b>06 Sep 2026</b><br>
+      Times as recorded onsite (GST)
+    </div>
+  </div>
+</header>
+
+<div class="strip"><div><span class="k">Units</span><span class="v mono">7</span><span class="s">in the pilot</span></div><div><span class="k">Window</span><span class="v mono"><span class="sm">12 Aug &ndash; 22 Aug 2026</span></span><span class="s">first to last logged activity</span></div><div><span class="k">Manual manhours</span><span class="v mono">36h 43m</span><span class="s">QA and MEP snagging, all units</span></div><div><span class="k">Capture manhours</span><span class="v mono">22h 30m</span><span class="s">onsite photo capture</span></div><div><span class="k">Processing time</span><span class="v mono">18h 15m</span><span class="s">elapsed, not manned</span></div></div>
+
+<div class="filters" role="tablist" aria-label="Filter by unit">
+  <span class="flabel">Unit</span>
+  <div class="chips">
+    <button class="chip" role="tab" aria-selected="true" data-f="all">All</button>
+    <button class="chip mono" role="tab" aria-selected="false" data-f="Q845">Q845</button><button class="chip mono" role="tab" aria-selected="false" data-f="Q844">Q844</button><button class="chip mono" role="tab" aria-selected="false" data-f="Q545">Q545</button><button class="chip mono" role="tab" aria-selected="false" data-f="BL109">BL109</button><button class="chip mono" role="tab" aria-selected="false" data-f="BL515">BL515</button><button class="chip mono" role="tab" aria-selected="false" data-f="C625F">C625F</button><button class="chip mono" role="tab" aria-selected="false" data-f="K148">K148</button>
+  </div>
+  <span class="showing" id="showing">Showing all 7 units</span>
+</div>
+
+
+<section class="card cal-card" aria-labelledby="cal-h">
+  <div class="card-head">
+    <h2 id="cal-h">Programme at a glance</h2>
+    <p class="card-sub">Every day each unit was worked on, August 2026.</p>
+  </div>
+  <div class="cal-legend"><span><i class="c-qa"></i>Manual QA</span><span><i class="c-mep"></i>Manual MEP</span><span><i class="c-cap"></i>Capture</span><span><i class="c-proc"></i>Processing</span></div>
+  <div class="cal-scroll">
+    <div class="cal">
+      <div class="cal-row cal-head"><div class="cal-u"></div><div class="cal-cells"><div class="cal-d"><span class="dow">W</span><span class="dnum">12</span></div><div class="cal-d"><span class="dow">T</span><span class="dnum">13</span></div><div class="cal-d"><span class="dow">F</span><span class="dnum">14</span></div><div class="cal-d wknd"><span class="dow">S</span><span class="dnum">15</span></div><div class="cal-d wknd"><span class="dow">S</span><span class="dnum">16</span></div><div class="cal-d"><span class="dow">M</span><span class="dnum">17</span></div><div class="cal-d"><span class="dow">T</span><span class="dnum">18</span></div><div class="cal-d"><span class="dow">W</span><span class="dnum">19</span></div><div class="cal-d"><span class="dow">T</span><span class="dnum">20</span></div><div class="cal-d"><span class="dow">F</span><span class="dnum">21</span></div><div class="cal-d wknd"><span class="dow">S</span><span class="dnum">22</span></div></div></div>
+      <div class="cal-row" data-unit="Q845"><a class="cal-u mono" href="#u-Q845">Q845</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-mep" title="Q845 &mdash; Manual MEP snagging"></i><i class="c-cap" title="Q845 &mdash; Capture"></i><i class="c-proc" title="Q845 &mdash; Processing"></i></div><div class="cal-c wknd on"><i class="c-qa" title="Q845 &mdash; Manual QA snagging"></i></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="Q844"><a class="cal-u mono" href="#u-Q844">Q844</a><div class="cal-cells"><div class="cal-c on"><i class="c-qa" title="Q844 &mdash; Manual QA snagging"></i></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="Q844 &mdash; Capture"></i><i class="c-proc" title="Q844 &mdash; Processing"></i></div><div class="cal-c wknd on"><i class="c-mep" title="Q844 &mdash; Manual MEP snagging"></i></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="Q545"><a class="cal-u mono" href="#u-Q545">Q545</a><div class="cal-cells"><div class="cal-c on"><i class="c-mep" title="Q545 &mdash; Manual MEP snagging"></i></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="Q545 &mdash; Capture"></i><i class="c-proc" title="Q545 &mdash; Processing"></i></div><div class="cal-c wknd on"><i class="c-qa" title="Q545 &mdash; Manual QA snagging"></i></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="BL109"><a class="cal-u mono" href="#u-BL109">BL109</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="BL109 &mdash; Capture"></i><i class="c-proc" title="BL109 &mdash; Processing"></i></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-mep" title="BL109 &mdash; Manual MEP snagging"></i></div><div class="cal-c wknd on"><i class="c-qa" title="BL109 &mdash; Manual QA snagging"></i></div></div></div><div class="cal-row" data-unit="BL515"><a class="cal-u mono" href="#u-BL515">BL515</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c on"><i class="c-qa" title="BL515 &mdash; Manual QA snagging"></i></div><div class="cal-c on"><i class="c-cap" title="BL515 &mdash; Capture"></i><i class="c-proc" title="BL515 &mdash; Processing"></i></div><div class="cal-c"></div><div class="cal-c on"><i class="c-mep" title="BL515 &mdash; Manual MEP snagging"></i></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="C625F"><a class="cal-u mono" href="#u-C625F">C625F</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="C625F &mdash; Capture"></i></div><div class="cal-c on"><i class="c-cap" title="C625F &mdash; Capture"></i><i class="c-proc" title="C625F &mdash; Processing"></i></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="K148"><a class="cal-u mono" href="#u-K148">K148</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd on"><i class="c-qa" title="K148 &mdash; Manual QA snagging"></i></div></div></div>
+    </div>
+  </div>
+</section>
+
+
+<article class="card unit-card" id="u-Q845" data-unit="Q845">
+  <div class="uhead">
+    <div class="uname">
+      <h3 class="mono">Q845</h3>
+      <p class="usub">QA <b>onsite</b> &middot; MEP on <b>CONXAI</b> &middot; captured 14 Aug</p>
+    </div>
+    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 08m</span><span class="s">QA 4h 44m + MEP 1h 24m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
+  </div>
+  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 15 Aug 2026 &middot; 09:55</dd></div><div><dt>End</dt><dd>Sat 15 Aug 2026 &middot; 12:17</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">2h 22m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">4h 44m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-conxai">CONXAI</span></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026 &middot; 14:37</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026 &middot; 16:01</dd></div><div><dt>Duration</dt><dd class="num">1h 24m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 24m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">1h 30m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
+</article>
+<article class="card unit-card" id="u-Q844" data-unit="Q844">
+  <div class="uhead">
+    <div class="uname">
+      <h3 class="mono">Q844</h3>
+      <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 14 Aug</p>
+    </div>
+    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 55m</span><span class="s">QA 5h 06m + MEP 1h 49m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
+  </div>
+  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Wed 12 Aug 2026 &middot; 13:45</dd></div><div><dt>End</dt><dd>Wed 12 Aug 2026 &middot; 16:18</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">2h 33m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">5h 06m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 15 Aug 2026 &middot; 19:57</dd></div><div><dt>End</dt><dd>Sat 15 Aug 2026 &middot; 21:46</dd></div><div><dt>Duration</dt><dd class="num">1h 49m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 49m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">1h 30m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
+</article>
+<article class="card unit-card" id="u-Q545" data-unit="Q545">
+  <div class="uhead">
+    <div class="uname">
+      <h3 class="mono">Q545</h3>
+      <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 14 Aug</p>
+    </div>
+    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 05m</span><span class="s">QA 5h 06m + MEP 59m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
+  </div>
+  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 15 Aug 2026 &middot; 12:17</dd></div><div><dt>End</dt><dd>Sat 15 Aug 2026 &middot; 14:50</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">2h 33m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">5h 06m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Wed 12 Aug 2026 &middot; 16:34</dd></div><div><dt>End</dt><dd>Wed 12 Aug 2026 &middot; 17:33</dd></div><div><dt>Duration</dt><dd class="num">59m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">59m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">1h 30m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
+</article>
+<article class="card unit-card" id="u-BL109" data-unit="BL109">
+  <div class="uhead">
+    <div class="uname">
+      <h3 class="mono">BL109</h3>
+      <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 18 Aug</p>
+    </div>
+    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">8h 34m</span><span class="s">QA 6h 56m + MEP 1h 38m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">5h 00m</span><span class="s">18 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 25m</span><span class="s">18 Aug</span></div></div>
+  </div>
+  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 22 Aug 2026 &middot; 14:07</dd></div><div><dt>End</dt><dd>Sat 22 Aug 2026 &middot; 20:05</dd></div><div><dt>Break</dt><dd>2h 30m</dd></div><div><dt>Duration</dt><dd class="num">3h 28m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">6h 56m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Fri 21 Aug 2026 &middot; 18:53</dd></div><div><dt>End</dt><dd>Fri 21 Aug 2026 &middot; 20:31</dd></div><div><dt>Duration</dt><dd class="num">1h 38m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 38m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">5h 00m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 25m</dd></div></dl></section></div>
+</article>
+<article class="card unit-card" id="u-BL515" data-unit="BL515">
+  <div class="uhead">
+    <div class="uname">
+      <h3 class="mono">BL515</h3>
+      <p class="usub">QA <b>onsite</b> &middot; MEP on <b>CONXAI</b> &middot; captured 18 Aug</p>
+    </div>
+    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">5h 33m</span><span class="s">QA 4h 33m + MEP 1h 00m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">2h 00m</span><span class="s">18 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">18 Aug</span></div></div>
+  </div>
+  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Mon 17 Aug 2026 &middot; 14:36</dd></div><div><dt>End</dt><dd>Mon 17 Aug 2026 &middot; 20:29</dd></div><div><dt>Break</dt><dd>1h 20m</dd></div><div><dt>Duration</dt><dd class="num">4h 33m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours<span class="warn" tabindex="0" role="note" aria-label="4h 33m across 2 inspectors is 9h 06m; the sheet records 4h 33m." data-tip="4h 33m across 2 inspectors is 9h 06m; the sheet records 4h 33m.">!</span></dt><dd class="num strong">4h 33m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-conxai">CONXAI</span></header><dl><div><dt>Start</dt><dd>Thu 20 Aug 2026 &middot; 13:25</dd></div><div><dt>End</dt><dd>Thu 20 Aug 2026 &middot; 14:25</dd></div><div><dt>Duration</dt><dd class="num">1h 00m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 00m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">2h 00m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
+</article>
+<article class="card unit-card" id="u-C625F" data-unit="C625F">
+  <div class="uhead">
+    <div class="uname">
+      <h3 class="mono">C625F</h3>
+      <p class="usub">captured 19 Aug&ndash;20 Aug</p>
+    </div>
+    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">&mdash;</span><span class="s">No manual snagging recorded</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">11h 00m</span><span class="s">19 Aug &ndash; 20 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">6h 30m</span><span class="s">20 Aug</span></div></div>
+  </div>
+  <div class="phases"><section class="phase ph-qa is-empty"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><p class="none">Not recorded<span class="sub">Planned platform: Onsite</span></p></section><section class="phase ph-mep is-empty"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><p class="none">Not recorded<span class="sub">Planned platform: Onsite</span></p></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Wed 19 Aug 2026</dd></div><div><dt>End</dt><dd>Thu 20 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">11h 00m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Thu 20 Aug 2026</dd></div><div><dt>End</dt><dd>Thu 20 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">6h 30m</dd></div></dl></section></div>
+</article>
+<article class="card unit-card" id="u-K148" data-unit="K148">
+  <div class="uhead">
+    <div class="uname">
+      <h3 class="mono">K148</h3>
+      <p class="usub">QA on <b>CONXAI</b> &middot; capture tbc</p>
+    </div>
+    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">3h 28m</span><span class="s">QA 3h 28m + MEP not recorded</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">tbc</span><span class="s">Not yet captured</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">tbc</span><span class="s">Not yet processed</span></div></div>
+  </div>
+  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-conxai">CONXAI</span></header><dl><div><dt>Start</dt><dd>Sat 22 Aug 2026 &middot; 10:03</dd></div><div><dt>End</dt><dd>Sat 22 Aug 2026 &middot; 13:31</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">3h 28m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">3h 28m</dd></div></dl></section><section class="phase ph-mep is-empty"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><p class="none">Not recorded<span class="sub">Planned platform: Onsite</span></p></section><section class="phase ph-cap is-empty"><header><h4>Capture</h4></header><p class="none">Scheduled, not yet run</p></section><section class="phase ph-proc is-empty"><header><h4>Processing</h4></header><p class="none">Scheduled, not yet run</p></section></div>
+</article>
+
+
+<section class="card" aria-labelledby="mx-h">
+  <div class="card-head">
+    <h2 id="mx-h">Full log, side by side</h2>
+    <p class="card-sub">The source sheet, normalised. Every row every unit was measured on.</p>
+  </div>
+  <div class="mxwrap">
+    <table class="mx">
+      <thead><tr><th scope="col" class="corner">Metric</th><th scope="col" class="mono">Q845</th><th scope="col" class="mono">Q844</th><th scope="col" class="mono">Q545</th><th scope="col" class="mono">BL109</th><th scope="col" class="mono">BL515</th><th scope="col" class="mono">C625F</th><th scope="col" class="mono">K148</th></tr></thead>
+      <tbody><tr class="grp"><th scope="rowgroup" colspan="8">Manual Qa Snagging</th></tr><tr><th scope="row">Platform</th><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>CONXAI</td></tr><tr><th scope="row">Start - Manual QA</th><td class="num">15 Aug 09:55</td><td class="num">12 Aug 13:45</td><td class="num">15 Aug 12:17</td><td class="num">22 Aug 14:07</td><td class="num">17 Aug 14:36</td><td class="na">&mdash;</td><td class="num">22 Aug 10:03</td></tr><tr><th scope="row">Break</th><td class="num">None</td><td class="num">None</td><td class="num">None</td><td class="num">2h 30m</td><td class="num">1h 20m</td><td class="na">&mdash;</td><td class="num">None</td></tr><tr><th scope="row">End - Manual QA</th><td class="num">15 Aug 12:17</td><td class="num">12 Aug 16:18</td><td class="num">15 Aug 14:50</td><td class="num">22 Aug 20:05</td><td class="num">17 Aug 20:29</td><td class="na">&mdash;</td><td class="num">22 Aug 13:31</td></tr><tr><th scope="row">Duration - Manual QA</th><td class="num">2h 22m</td><td class="num">2h 33m</td><td class="num">2h 33m</td><td class="num">3h 28m</td><td class="num">4h 33m</td><td class="na">&mdash;</td><td class="num">3h 28m</td></tr><tr><th scope="row">Number of QA</th><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td class="na">&mdash;</td><td>1</td></tr><tr><th scope="row">Manhours</th><td class="num">4h 44m</td><td class="num">5h 06m</td><td class="num">5h 06m</td><td class="num">6h 56m</td><td class="num">4h 33m</td><td class="na">&mdash;</td><td class="num">3h 28m</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Manual Mep Snagging</th></tr><tr><th scope="row">Platform</th><td>CONXAI</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>CONXAI</td><td>Onsite</td><td>Onsite</td></tr><tr><th scope="row">Start - MEP QA</th><td class="num">14 Aug 14:37</td><td class="num">15 Aug 19:57</td><td class="num">12 Aug 16:34</td><td class="num">21 Aug 18:53</td><td class="num">20 Aug 13:25</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">End - MEP QA</th><td class="num">14 Aug 16:01</td><td class="num">15 Aug 21:46</td><td class="num">12 Aug 17:33</td><td class="num">21 Aug 20:31</td><td class="num">20 Aug 14:25</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Duration - MEP QA</th><td class="num">1h 24m</td><td class="num">1h 49m</td><td class="num">59m</td><td class="num">1h 38m</td><td class="num">1h 00m</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Number of QA</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Manhours</th><td class="num">1h 24m</td><td class="num">1h 49m</td><td class="num">59m</td><td class="num">1h 38m</td><td class="num">1h 00m</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Capture</th></tr><tr><th scope="row">Start - Capture</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">19 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">End - Capture</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">Manhours</th><td class="num">1h 30m</td><td class="num">1h 30m</td><td class="num">1h 30m</td><td class="num">5h 00m</td><td class="num">2h 00m</td><td class="num">11h 00m</td><td class="na">tbc</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Processing</th></tr><tr><th scope="row">Start - Processing</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">End - Processing</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">Processing time</th><td class="num">2h 20m</td><td class="num">2h 20m</td><td class="num">2h 20m</td><td class="num">2h 25m</td><td class="num">2h 20m</td><td class="num">6h 30m</td><td class="na">tbc</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="notes">
+  <h2>Reading the log</h2>
+  <ul>
+    <li><b>Duration</b> is start to end less any recorded break. <b>Manhours</b> is that duration
+      multiplied by the number of inspectors on site.</li>
+    <li><b>Processing time</b> is elapsed pipeline time, not manned effort, so it is kept out of
+      the manhours totals.</li>
+    <li>A <span class="warn">!</span> marks a figure that does not agree with
+      the times recorded beside it. Hover it for the arithmetic. Values are shown exactly as the
+      sheet records them &mdash; nothing has been corrected.</li>
+    <li>&mdash; means the sheet records N/A; <b>tbc</b> means the work is scheduled but not yet done.</li>
+  </ul>
+</div>
+
+<p class="foot">
+  Generated from <span class="mono">data/activity-logs.csv</span> by
+  <span class="mono">build.py</span> &middot; 06 Sep 2026.
+  Re-run the script after updating the sheet to refresh this page.
+</p>
+
+</div>
+<script>
+(function(){
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.unit-card'));
+  var rows  = Array.prototype.slice.call(document.querySelectorAll('.cal-row[data-unit]'));
+  var out   = document.getElementById('showing');
+  var total = cards.length;
+
+  function apply(f, push){
+    chips.forEach(function(c){ c.setAttribute('aria-selected', String(c.dataset.f === f)); });
+    cards.forEach(function(c){ c.hidden = !(f === 'all' || c.dataset.unit === f); });
+    rows.forEach(function(r){ r.hidden = !(f === 'all' || r.dataset.unit === f); });
+    out.textContent = f === 'all' ? 'Showing all ' + total + ' units' : 'Showing ' + f + ' only';
+    if (push) {
+      history.replaceState(null, '', f === 'all' ? location.pathname : '#' + f);
+    }
+  }
+
+  chips.forEach(function(c){
+    c.addEventListener('click', function(){ apply(c.dataset.f, true); });
+  });
+
+  var known = chips.map(function(c){ return c.dataset.f; });
+  var hash = decodeURIComponent(location.hash.replace(/^#(u-)?/, ''));
+  apply(known.indexOf(hash) > -1 ? hash : 'all', false);
+})();
+</script>
+</body>
+</html>
