@@ -188,7 +188,7 @@ PHASES = [
 ]
 
 
-def build_units(units, block_order, blocks, resolve):
+def build_units(units, block_order, blocks, resolve, corrections):
     lut = {}
     for name in block_order:
         for metric, vals in blocks[name]:
@@ -225,10 +225,20 @@ def build_units(units, block_order, blocks, resolve):
                 if implied != dur:
                     flags.append(("duration", f"Start to end less break is {fmt_dur(implied)}; "
                                               f"the sheet records {fmt_dur(dur)}."))
+
+            # Manhours is duration x headcount throughout the sheet. Where a cell
+            # breaks that rule the sheet has simply not multiplied, so derive the
+            # figure and mark it rather than publish the un-multiplied one.
+            sheet_eff = eff
             if dur is not None and people and eff is not None and dur * people != eff:
-                flags.append(("effort", f"{fmt_dur(dur)} across {people} inspector"
-                                        f"{'s' if people > 1 else ''} is {fmt_dur(dur * people)}; "
-                                        f"the sheet records {fmt_dur(eff)}."))
+                eff = dur * people
+                word = "inspector" if people == 1 else "inspectors"
+                flags.append(("effort",
+                              f"Corrected. {fmt_dur(dur)} across {people} {word} is "
+                              f"{fmt_dur(eff)}. The source sheet records "
+                              f"{fmt_dur(sheet_eff)} \u2014 the duration, not multiplied "
+                              f"by headcount."))
+                corrections[(block, k_effort, unit)] = (eff, sheet_eff)
 
             pending = any(is_pending(v) for v in (raw["start"], raw["end"], raw["effort"]))
             recorded = bool(start or end or dur is not None or eff is not None)
@@ -237,6 +247,7 @@ def build_units(units, block_order, blocks, resolve):
                 "platform": raw["platform"], "start": start, "end": end,
                 "duration": dur, "break": brk, "people": people, "effort": eff,
                 "effort_label": "Processing time" if slug == "proc" else "Manhours",
+                "effort_sheet": sheet_eff,
                 "flags": dict(flags), "pending": pending, "recorded": recorded,
                 "raw": raw,
             })
@@ -264,9 +275,11 @@ def platform_pill(p):
 def flag(phase, key):
     if key not in phase["flags"]:
         return ""
-    return (f'<span class="warn" tabindex="0" role="note" '
-            f'aria-label="{esc(phase["flags"][key])}" '
-            f'data-tip="{esc(phase["flags"][key])}">!</span>')
+    tip = phase["flags"][key]
+    kind = "fix" if tip.startswith("Corrected") else "warn"
+    return (f'<span class="{kind}" tabindex="0" role="note" '
+            f'aria-label="{esc(tip)}" data-tip="{esc(tip)}">'
+            f'{"&#8727;" if kind == "fix" else "!"}</span>')
 
 
 def dd(value, extra=""):
@@ -418,7 +431,7 @@ def render_calendar(units, unit_phases):
 </section>"""
 
 
-def render_matrix(units, block_order, blocks, resolve):
+def render_matrix(units, block_order, blocks, resolve, corrections):
     thead = "".join(f'<th scope="col" class="mono">{esc(u)}</th>' for u in units)
     body = []
     for name in block_order:
@@ -427,6 +440,14 @@ def render_matrix(units, block_order, blocks, resolve):
         for metric, vals in blocks[name]:
             cells = []
             for u in units:
+                fix = corrections.get((name, metric.strip(), u))
+                if fix is not None:
+                    tip = (f"Corrected from the sheet's {fmt_dur(fix[1])}, which is the "
+                           f"duration not multiplied by headcount.")
+                    cells.append(f'<td class="num"><span class="fixed">{fmt_dur(fix[0])}</span>'
+                                 f'<span class="fix" tabindex="0" role="note" '
+                                 f'aria-label="{esc(tip)}" data-tip="{esc(tip)}">&#8727;</span></td>')
+                    continue
                 raw = vals[u].strip()
                 if is_null(raw):
                     cells.append('<td class="na">&mdash;</td>')
@@ -463,7 +484,7 @@ def render_matrix(units, block_order, blocks, resolve):
 </section>"""
 
 
-def render(units, block_order, blocks, resolve, unit_phases):
+def render(units, block_order, blocks, resolve, unit_phases, corrections):
     chips = "".join(
         f'<button class="chip mono" role="tab" aria-selected="false" data-f="{esc(u)}">{esc(u)}</button>'
         for u in units)
@@ -612,11 +633,15 @@ h2{{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}}
 .phase .none{{margin:2px 0 4px;font-size:12.6px;color:var(--muted)}}
 .phase .none .sub{{display:block;font-size:11.5px;margin-top:4px}}
 
+.fix{{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  margin-left:5px;border-radius:50%;background:var(--c-mep);color:#fff;font-size:13px;
+  font-weight:700;line-height:1;vertical-align:middle;cursor:help;position:relative}}
 .warn{{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
   margin-left:5px;border-radius:50%;background:var(--warn);color:#fff;font-size:9.5px;
   font-weight:800;vertical-align:middle;cursor:help;position:relative}}
-.warn:not([data-tip]){{cursor:default}}
-.warn[data-tip]:hover::after,.warn[data-tip]:focus::after{{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);
+.warn:not([data-tip]),.fix:not([data-tip]){{cursor:default}}
+.warn[data-tip]:hover::after,.warn[data-tip]:focus::after,
+.fix[data-tip]:hover::after,.fix[data-tip]:focus::after{{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);
   left:50%;transform:translateX(-50%);width:max-content;max-width:250px;text-align:left;
   background:var(--ink);color:#fff;font-size:11.5px;font-weight:400;line-height:1.45;
   padding:8px 10px;border-radius:7px;z-index:20;pointer-events:none}}
@@ -655,6 +680,7 @@ table.mx{{width:100%;border-collapse:collapse;font-size:12.6px}}
   font-weight:700;color:var(--ink);position:sticky;left:0}}
 .mx td.num{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
 .mx td.na{{color:var(--muted)}}
+.mx .fixed{{border-bottom:1px dotted var(--c-mep)}}
 .mx tbody tr:hover td{{background:#fafbfa}}
 
 .notes{{margin-top:26px;font-size:12.4px;color:var(--ink2);line-height:1.75}}
@@ -720,7 +746,7 @@ table.mx{{width:100%;border-collapse:collapse;font-size:12.6px}}
 
 {"".join(cards)}
 
-{render_matrix(units, block_order, blocks, resolve)}
+{render_matrix(units, block_order, blocks, resolve, corrections)}
 
 <div class="notes">
   <h2>Reading the log</h2>
@@ -729,9 +755,12 @@ table.mx{{width:100%;border-collapse:collapse;font-size:12.6px}}
       multiplied by the number of inspectors on site.</li>
     <li><b>Processing time</b> is elapsed pipeline time, not manned effort, so it is kept out of
       the manhours totals.</li>
-    <li>A <span class="warn">!</span> marks a figure that does not agree with
-      the times recorded beside it. Hover it for the arithmetic. Values are shown exactly as the
-      sheet records them &mdash; nothing has been corrected.</li>
+    <li>A <span class="fix">&#8727;</span> marks a manhours figure the source sheet left as the raw
+      duration without multiplying by the number of inspectors. It is shown here multiplied, per
+      the rule the rest of the sheet follows; hover it for the arithmetic and the sheet's own
+      value.</li>
+    <li>A <span class="warn">!</span> marks any other figure that does not agree with the times
+      recorded beside it. Those are shown as the sheet records them, not corrected.</li>
     <li>&mdash; means the sheet records N/A; <b>tbc</b> means the work is scheduled but not yet done.</li>
   </ul>
 </div>
@@ -778,8 +807,10 @@ table.mx{{width:100%;border-collapse:collapse;font-size:12.6px}}
 def main():
     units, block_order, blocks = read_matrix()
     resolve = resolve_dates(units, block_order, blocks)
-    unit_phases = build_units(units, block_order, blocks, resolve)
-    OUT_PATH.write_text(render(units, block_order, blocks, resolve, unit_phases),
+    corrections = {}
+    unit_phases = build_units(units, block_order, blocks, resolve, corrections)
+    OUT_PATH.write_text(render(units, block_order, blocks, resolve, unit_phases,
+                               corrections),
                         encoding="utf-8")
     print(f"wrote {OUT_PATH} ({OUT_PATH.stat().st_size:,} bytes) "
           f"for {len(units)} units: {', '.join(units)}")
