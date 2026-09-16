@@ -15,6 +15,10 @@ organised one card per unit.
 Filter to a single unit with the chips at the top; the selection deep-links
 (`…/#BL515`).
 
+Each unit carries its floor area, taken from the unit's own header cell in the
+sheet's first row (`BL515 (200.3 sq. m)`), beside the unit name and under the
+column head in the full log.
+
 ## Rebuilding
 
 `index.html` is generated. After updating the sheet:
