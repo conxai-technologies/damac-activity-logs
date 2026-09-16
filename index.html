@@ -68,7 +68,8 @@ h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
 
 .uhead{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
   padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:16px}
-.uname h3{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em}
+.uname h3{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em;display:inline-block;vertical-align:baseline}
+.uarea{display:inline-block;margin-left:10px;vertical-align:3px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--panel);border:1px solid var(--line2);border-radius:999px;padding:2px 9px;white-space:nowrap}
 .usub{color:var(--ink2);font-size:12.8px;margin:5px 0 0}
 .usub b{color:var(--ink);font-weight:600}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(124px,1fr));gap:9px;flex:0 1 470px}
@@ -140,6 +141,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
   text-transform:uppercase;color:var(--ink2);font-weight:700;border-bottom:1px solid var(--line);z-index:2}
 .mx tbody th{font-weight:500;color:var(--ink2);position:sticky;left:0;background:var(--surface);z-index:1}
 .mx .corner{position:sticky;left:0;background:var(--panel);z-index:3}
+.mx thead th .mx-area{display:block;margin-top:2px;font-size:10px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--muted)}
 .mx tr.grp th{background:var(--panel);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
   font-weight:700;color:var(--ink);position:sticky;left:0}
 .mx td.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
@@ -188,7 +190,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
     </div>
     <div class="provenance">
       Source <b>Damac snagging schedules &mdash; Activity logs</b><br>
-      Units <b>7</b> &middot; Generated <b>07 Sep 2026</b><br>
+      Units <b>7</b> &middot; Generated <b>16 Sep 2026</b><br>
       Times as recorded onsite (GST)
     </div>
   </div>
@@ -224,7 +226,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 <article class="card unit-card" id="u-Q845" data-unit="Q845">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">Q845</h3>
+      <h3 class="mono">Q845</h3><span class="uarea" title="Floor area">171.8 m&sup2;</span>
       <p class="usub">QA <b>onsite</b> &middot; MEP on <b>CONXAI</b> &middot; captured 14 Aug</p>
     </div>
     <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 08m</span><span class="s">QA 4h 44m + MEP 1h 24m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
@@ -234,7 +236,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 <article class="card unit-card" id="u-Q844" data-unit="Q844">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">Q844</h3>
+      <h3 class="mono">Q844</h3><span class="uarea" title="Floor area">172.8 m&sup2;</span>
       <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 14 Aug</p>
     </div>
     <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 55m</span><span class="s">QA 5h 06m + MEP 1h 49m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
@@ -244,7 +246,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 <article class="card unit-card" id="u-Q545" data-unit="Q545">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">Q545</h3>
+      <h3 class="mono">Q545</h3><span class="uarea" title="Floor area">177.8 m&sup2;</span>
       <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 14 Aug</p>
     </div>
     <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 05m</span><span class="s">QA 5h 06m + MEP 59m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
@@ -254,7 +256,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 <article class="card unit-card" id="u-BL109" data-unit="BL109">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">BL109</h3>
+      <h3 class="mono">BL109</h3><span class="uarea" title="Floor area">700.5 m&sup2;</span>
       <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 18 Aug</p>
     </div>
     <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">8h 34m</span><span class="s">QA 6h 56m + MEP 1h 38m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">5h 00m</span><span class="s">18 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 25m</span><span class="s">18 Aug</span></div></div>
@@ -264,7 +266,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 <article class="card unit-card" id="u-BL515" data-unit="BL515">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">BL515</h3>
+      <h3 class="mono">BL515</h3><span class="uarea" title="Floor area">200.3 m&sup2;</span>
       <p class="usub">QA <b>onsite</b> &middot; MEP on <b>CONXAI</b> &middot; captured 18 Aug</p>
     </div>
     <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">10h 06m</span><span class="s">QA 9h 06m + MEP 1h 00m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">2h 00m</span><span class="s">18 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">18 Aug</span></div></div>
@@ -274,7 +276,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 <article class="card unit-card" id="u-C625F" data-unit="C625F">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">C625F</h3>
+      <h3 class="mono">C625F</h3><span class="uarea" title="Floor area">1,870.1 m&sup2;</span>
       <p class="usub">captured 19 Aug&ndash;20 Aug</p>
     </div>
     <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">&mdash;</span><span class="s">No manual snagging recorded</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">11h 00m</span><span class="s">19 Aug &ndash; 20 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">6h 30m</span><span class="s">20 Aug</span></div></div>
@@ -284,7 +286,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 <article class="card unit-card" id="u-K148" data-unit="K148">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">K148</h3>
+      <h3 class="mono">K148</h3><span class="uarea" title="Floor area">176.1 m&sup2;</span>
       <p class="usub">QA on <b>CONXAI</b> &middot; capture tbc</p>
     </div>
     <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">3h 28m</span><span class="s">QA 3h 28m + MEP not recorded</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">tbc</span><span class="s">Not yet captured</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">tbc</span><span class="s">Not yet processed</span></div></div>
@@ -300,7 +302,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
   </div>
   <div class="mxwrap">
     <table class="mx">
-      <thead><tr><th scope="col" class="corner">Metric</th><th scope="col" class="mono">Q845</th><th scope="col" class="mono">Q844</th><th scope="col" class="mono">Q545</th><th scope="col" class="mono">BL109</th><th scope="col" class="mono">BL515</th><th scope="col" class="mono">C625F</th><th scope="col" class="mono">K148</th></tr></thead>
+      <thead><tr><th scope="col" class="corner">Metric</th><th scope="col" class="mono">Q845<span class="mx-area">171.8 m&sup2;</span></th><th scope="col" class="mono">Q844<span class="mx-area">172.8 m&sup2;</span></th><th scope="col" class="mono">Q545<span class="mx-area">177.8 m&sup2;</span></th><th scope="col" class="mono">BL109<span class="mx-area">700.5 m&sup2;</span></th><th scope="col" class="mono">BL515<span class="mx-area">200.3 m&sup2;</span></th><th scope="col" class="mono">C625F<span class="mx-area">1,870.1 m&sup2;</span></th><th scope="col" class="mono">K148<span class="mx-area">176.1 m&sup2;</span></th></tr></thead>
       <tbody><tr class="grp"><th scope="rowgroup" colspan="8">Manual Qa Snagging</th></tr><tr><th scope="row">Platform</th><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>CONXAI</td></tr><tr><th scope="row">Start - Manual QA</th><td class="num">15 Aug 09:55</td><td class="num">12 Aug 13:45</td><td class="num">15 Aug 12:17</td><td class="num">22 Aug 14:07</td><td class="num">17 Aug 14:36</td><td class="na">&mdash;</td><td class="num">22 Aug 10:03</td></tr><tr><th scope="row">Break</th><td class="num">None</td><td class="num">None</td><td class="num">None</td><td class="num">2h 30m</td><td class="num">1h 20m</td><td class="na">&mdash;</td><td class="num">None</td></tr><tr><th scope="row">End - Manual QA</th><td class="num">15 Aug 12:17</td><td class="num">12 Aug 16:18</td><td class="num">15 Aug 14:50</td><td class="num">22 Aug 20:05</td><td class="num">17 Aug 20:29</td><td class="na">&mdash;</td><td class="num">22 Aug 13:31</td></tr><tr><th scope="row">Duration - Manual QA</th><td class="num">2h 22m</td><td class="num">2h 33m</td><td class="num">2h 33m</td><td class="num">3h 28m</td><td class="num">4h 33m</td><td class="na">&mdash;</td><td class="num">3h 28m</td></tr><tr><th scope="row">Number of QA</th><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td class="na">&mdash;</td><td>1</td></tr><tr><th scope="row">Manhours</th><td class="num">4h 44m</td><td class="num">5h 06m</td><td class="num">5h 06m</td><td class="num">6h 56m</td><td class="num">9h 06m</td><td class="na">&mdash;</td><td class="num">3h 28m</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Manual Mep Snagging</th></tr><tr><th scope="row">Platform</th><td>CONXAI</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>CONXAI</td><td>Onsite</td><td>Onsite</td></tr><tr><th scope="row">Start - MEP QA</th><td class="num">14 Aug 14:37</td><td class="num">15 Aug 19:57</td><td class="num">12 Aug 16:34</td><td class="num">21 Aug 18:53</td><td class="num">20 Aug 13:25</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">End - MEP QA</th><td class="num">14 Aug 16:01</td><td class="num">15 Aug 21:46</td><td class="num">12 Aug 17:33</td><td class="num">21 Aug 20:31</td><td class="num">20 Aug 14:25</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Duration - MEP QA</th><td class="num">1h 24m</td><td class="num">1h 49m</td><td class="num">59m</td><td class="num">1h 38m</td><td class="num">1h 00m</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Number of QA</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Manhours</th><td class="num">1h 24m</td><td class="num">1h 49m</td><td class="num">59m</td><td class="num">1h 38m</td><td class="num">1h 00m</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Capture</th></tr><tr><th scope="row">Start - Capture</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">19 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">End - Capture</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">Manhours</th><td class="num">1h 30m</td><td class="num">1h 30m</td><td class="num">1h 30m</td><td class="num">5h 00m</td><td class="num">2h 00m</td><td class="num">11h 00m</td><td class="na">tbc</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Processing</th></tr><tr><th scope="row">Start - Processing</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">End - Processing</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">Processing time</th><td class="num">2h 20m</td><td class="num">2h 20m</td><td class="num">2h 20m</td><td class="num">2h 25m</td><td class="num">2h 20m</td><td class="num">6h 30m</td><td class="na">tbc</td></tr></tbody>
     </table>
   </div>
@@ -322,7 +324,7 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 
 <p class="foot">
   Generated from <span class="mono">data/activity-logs.csv</span> by
-  <span class="mono">build.py</span> &middot; 07 Sep 2026.
+  <span class="mono">build.py</span> &middot; 16 Sep 2026.
   Re-run the script after updating the sheet to refresh this page.
 </p>
 

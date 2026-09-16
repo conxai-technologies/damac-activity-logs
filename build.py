@@ -127,16 +127,36 @@ def fmt_dt_short(dt, has_time):
 
 # ------------------------------------------------------------------ model ---
 
+AREA = re.compile(r"\(([\d,.]+)\s*sq\.?\s*m\.?\)", re.I)
+
+
+def parse_area(cell):
+    """Floor area from a header like 'C625F (1,870.1 sq. m)'. Blank where the
+    sheet gives no figure."""
+    m = AREA.search(cell)
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def fmt_area(a):
+    return None if a is None else f"{a:,.1f} m&sup2;"
+
+
 def read_matrix():
     rows = list(csv.reader(CSV_PATH.open(newline="", encoding="utf-8-sig")))
     header = rows[0]
-    units, cols = [], []
+    units, cols, areas = [], [], {}
     for i, cell in enumerate(header[2:], start=2):
         name = re.sub(r"\s*\(.*\)\s*$", "", cell).strip()
         if not name or name.lower().startswith("note"):
             continue
         units.append(name)
         cols.append(i)
+        areas[name] = parse_area(cell)
 
     blocks, order, current = {}, [], None
     for row in rows[1:]:
@@ -151,7 +171,7 @@ def read_matrix():
         if not metric or current is None:
             continue
         blocks[current].append((metric, {u: row[c] for u, c in zip(units, cols)}))
-    return units, [b for i, b in enumerate(order) if b not in order[:i]], blocks
+    return units, areas, [b for i, b in enumerate(order) if b not in order[:i]], blocks
 
 
 def resolve_dates(units, block_order, blocks):
@@ -418,8 +438,12 @@ def render_calendar(units, unit_phases):
 </section>"""
 
 
-def render_matrix(units, block_order, blocks, resolve):
-    thead = "".join(f'<th scope="col" class="mono">{esc(u)}</th>' for u in units)
+def render_matrix(units, areas, block_order, blocks, resolve):
+    thead = "".join(
+        f'<th scope="col" class="mono">{esc(u)}'
+        + (f'<span class="mx-area">{fmt_area(areas.get(u))}</span>'
+           if areas.get(u) else '')
+        + '</th>' for u in units)
     body = []
     for name in block_order:
         body.append(f'<tr class="grp"><th scope="rowgroup" colspan="{len(units) + 1}">'
@@ -463,7 +487,7 @@ def render_matrix(units, block_order, blocks, resolve):
 </section>"""
 
 
-def render(units, block_order, blocks, resolve, unit_phases):
+def render(units, areas, block_order, blocks, resolve, unit_phases):
     chips = "".join(
         f'<button class="chip mono" role="tab" aria-selected="false" data-f="{esc(u)}">{esc(u)}</button>'
         for u in units)
@@ -476,11 +500,14 @@ def render(units, block_order, blocks, resolve, unit_phases):
             f'<span class="v mono">{v}</span><span class="s">{s}</span></div>'
             for k, v, s in unit_summary(phases))
         panels = "".join(render_phase(p) for p in phases)
+        area = fmt_area(areas.get(u))
+        area_badge = (f'<span class="uarea" title="Floor area">{area}</span>'
+                      if area else "")
         cards.append(f"""
 <article class="card unit-card" id="u-{esc(u)}" data-unit="{esc(u)}">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">{esc(u)}</h3>
+      <h3 class="mono">{esc(u)}</h3>{area_badge}
       <p class="usub">{unit_subline(phases)}</p>
     </div>
     <div class="tiles">{tiles}</div>
@@ -579,7 +606,8 @@ h2{{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}}
 
 .uhead{{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
   padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:16px}}
-.uname h3{{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em}}
+.uname h3{{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em;display:inline-block;vertical-align:baseline}}
+.uarea{{display:inline-block;margin-left:10px;vertical-align:3px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--panel);border:1px solid var(--line2);border-radius:999px;padding:2px 9px;white-space:nowrap}}
 .usub{{color:var(--ink2);font-size:12.8px;margin:5px 0 0}}
 .usub b{{color:var(--ink);font-weight:600}}
 .tiles{{display:grid;grid-template-columns:repeat(3,minmax(124px,1fr));gap:9px;flex:0 1 470px}}
@@ -651,6 +679,7 @@ table.mx{{width:100%;border-collapse:collapse;font-size:12.6px}}
   text-transform:uppercase;color:var(--ink2);font-weight:700;border-bottom:1px solid var(--line);z-index:2}}
 .mx tbody th{{font-weight:500;color:var(--ink2);position:sticky;left:0;background:var(--surface);z-index:1}}
 .mx .corner{{position:sticky;left:0;background:var(--panel);z-index:3}}
+.mx thead th .mx-area{{display:block;margin-top:2px;font-size:10px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--muted)}}
 .mx tr.grp th{{background:var(--panel);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
   font-weight:700;color:var(--ink);position:sticky;left:0}}
 .mx td.num{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
@@ -720,7 +749,7 @@ table.mx{{width:100%;border-collapse:collapse;font-size:12.6px}}
 
 {"".join(cards)}
 
-{render_matrix(units, block_order, blocks, resolve)}
+{render_matrix(units, areas, block_order, blocks, resolve)}
 
 <div class="notes">
   <h2>Reading the log</h2>
@@ -776,10 +805,10 @@ table.mx{{width:100%;border-collapse:collapse;font-size:12.6px}}
 
 
 def main():
-    units, block_order, blocks = read_matrix()
+    units, areas, block_order, blocks = read_matrix()
     resolve = resolve_dates(units, block_order, blocks)
     unit_phases = build_units(units, block_order, blocks, resolve)
-    OUT_PATH.write_text(render(units, block_order, blocks, resolve, unit_phases),
+    OUT_PATH.write_text(render(units, areas, block_order, blocks, resolve, unit_phases),
                         encoding="utf-8")
     print(f"wrote {OUT_PATH} ({OUT_PATH.stat().st_size:,} bytes) "
           f"for {len(units)} units: {', '.join(units)}")
