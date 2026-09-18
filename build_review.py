@@ -459,32 +459,6 @@ table.dt{{width:100%;border-collapse:collapse;font-size:12.6px}}
 
 {render_examples(data)}
 
-<div class="notes">
-  <h2>Reading these figures</h2>
-  <ul>
-    <li><b>Deleted</b>, <b>changed</b> and <b>accepted as issued</b> are exclusive: every
-      material snag falls in exactly one, and the three sum to the villa's total.</li>
-    <li>A <span class="warn">!</span> marks a figure that does not agree with the numbers
-      recorded beside it. Hover it for the arithmetic. Values are shown exactly as the report
-      records them &mdash; nothing has been corrected.</li>
-    <li>This report covers {len(villas)} villas. C625F and K148 appear in the
-      <a href="index.html">activity log</a> but not here.</li>
-    <li>The example photos are exported from
-      <span class="mono">{esc(data["photo_source"]["deck"])}</span> and served from this site,
-      so nothing here depends on an external account.
-      {esc(data["photo_source"]["note"])} That deck's own figures differ from this report on
-      three fields &mdash; Description, Location and Photo. The report's numbers are the ones
-      shown here.</li>
-  </ul>
-</div>
-
-<p class="foot">
-  Generated from <span class="mono">data/review-stats.json</span> by
-  <span class="mono">build_review.py</span> &middot; {GENERATED:%d %b %Y}.
-  Tables and wording from <b>{esc(data["source"]["doc"])}</b>, dated
-  {esc(data["source"]["dated"])}.
-</p>
-
 </div>
 </body>
 </html>
