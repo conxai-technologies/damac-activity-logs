@@ -1,0 +1,202 @@
+{
+  "source": {
+    "doc": "DAMAC QA/QC Revision Report",
+    "dated": "2026-09-18",
+    "note": "Tables and wording taken from the report. It supersedes the 18 Sep deck on three fields: Description, Location and Photo."
+  },
+  "photo_source": {
+    "deck": "Damac Snagging Updates 18-09-2026.pptx",
+    "url": "https://drive.google.com/file/d/1QWzWHVtEkQrwiJl2kG6Zl1-rIxIXqffR/view",
+    "note": "Slides 6 and 7 of the deck are identical; the content is carried once here."
+  },
+  "lead": "Across five villas, 836 of the 2,855 material snags were deleted (29.3%), 865 were changed (30.3%), and 1,154 were accepted exactly as issued (40.4%).",
+  "scope": "For each villa, how many of the snags were deleted, how many were changed, and how many were accepted without change. It covers five villas.",
+  "scope_note": "Every figure in this report is counted over the 2,855 material snags only.",
+  "terms": {
+    "heading": "What each term means",
+    "body": "Every material snag has exactly one outcome: it was deleted, it was changed, or it was accepted untouched."
+  },
+  "denominator": {
+    "heading": "The denominator",
+    "body": "Every percentage in this report uses the same denominator: the <b>material snags issued for that villa</b>. Deletions, changes and individual field changes are all expressed as a share of that one number, so any two figures can be compared directly."
+  },
+  "outcomes": [
+    {"key": "deleted", "label": "Deleted", "total": 836},
+    {"key": "changed", "label": "Changed", "total": 865},
+    {"key": "untouched", "label": "Accepted as issued", "total": 1154}
+  ],
+  "deletions_note": "Snags removed from the board, as a share of material snags.",
+  "deletions_range": "The rate ranges from 10.4% on BL515 to 41.8% on Q845.",
+  "fields": [
+    {"key": "priority", "label": "Priority", "records": "Urgency of the defect: low, medium or high"},
+    {"key": "description", "label": "Description", "records": "The written text of the defect"},
+    {"key": "trade", "label": "Trade", "records": "Responsible discipline: Civil, MEP, Joinery, Aluminium"},
+    {"key": "location", "label": "Location", "records": "Where in the villa the defect sits"},
+    {"key": "photo", "label": "Photo", "records": "The attached evidence image"}
+  ],
+  "fields_intro": "The board records which field was edited. The five fields it tracks are:",
+  "fields_note": "Each cell is the number of snags on which that field was changed, with its share of the villa's material snags in brackets. The last column is the share of the villa's snags changed in any field at all (i.e. one field or more).",
+  "fields_caveat": "A snag can be edited in more than one field, so the field columns sum to more than the changed column.",
+  "villas": [
+    {
+      "unit": "Q844",
+      "snags": 328,
+      "deleted": 55,
+      "pct_deleted": 16.8,
+      "changed": 85,
+      "pct_changed": 25.9,
+      "field_changes": {
+        "priority": [20, 6.1],
+        "description": [77, 23.5],
+        "trade": [6, 1.8],
+        "location": [2, 0.6],
+        "photo": [1, 0.3]
+      }
+    },
+    {
+      "unit": "Q545",
+      "snags": 357,
+      "deleted": 142,
+      "pct_deleted": 39.8,
+      "changed": 132,
+      "pct_changed": 37.0,
+      "field_changes": {
+        "priority": [101, 28.3],
+        "description": [52, 14.6],
+        "trade": [0, null],
+        "location": [0, null],
+        "photo": [1, 0.3]
+      }
+    },
+    {
+      "unit": "Q845",
+      "snags": 617,
+      "deleted": 258,
+      "pct_deleted": 41.8,
+      "changed": 202,
+      "pct_changed": 32.7,
+      "field_changes": {
+        "priority": [169, 27.4],
+        "description": [60, 9.7],
+        "trade": [1, 0.2],
+        "location": [0, null],
+        "photo": [0, null]
+      }
+    },
+    {
+      "unit": "BL515",
+      "snags": 538,
+      "deleted": 56,
+      "pct_deleted": 10.4,
+      "changed": 37,
+      "pct_changed": 6.9,
+      "field_changes": {
+        "priority": [33, 6.1],
+        "description": [6, 1.1],
+        "trade": [3, 0.6],
+        "location": [0, null],
+        "photo": [0, null]
+      }
+    },
+    {
+      "unit": "BL109",
+      "snags": 1015,
+      "deleted": 325,
+      "pct_deleted": 32.0,
+      "changed": 409,
+      "pct_changed": 40.3,
+      "field_changes": {
+        "priority": [303, 29.9],
+        "description": [193, 19.0],
+        "trade": [5, 0.5],
+        "location": [0, null],
+        "photo": [0, null]
+      }
+    }
+  ],
+  "total": {
+    "unit": "Total",
+    "snags": 2855,
+    "deleted": 836,
+    "pct_deleted": 29.3,
+    "changed": 865,
+    "pct_changed": 30.3,
+    "field_changes": {
+      "priority": [626, 21.9],
+      "description": [388, 13.6],
+      "trade": [15, 0.5],
+      "location": [2, 0.1],
+      "photo": [2, 0.1]
+    }
+  },
+  "examples": [
+    {
+      "unit": "BL109",
+      "snag": "0040",
+      "image": "assets/review/bl109-0040.jpg",
+      "ai": {
+        "location": "Bathroom 2",
+        "trade": "Civil",
+        "type": "Wall - Sandfilling/Grouting improper",
+        "description": "Wall tiles: inconsistent joint width, unsealed gaps and corners"
+      },
+      "manual": {
+        "location": "Bathroom 2",
+        "trade": "Civil",
+        "type": "Wall - Sandfilling/Grouting improper",
+        "description": "Inconsistent width between tiles and poor grouting."
+      }
+    },
+    {
+      "unit": "BL109",
+      "snag": "0472",
+      "image": "assets/review/bl109-0472.jpg",
+      "ai": {
+        "location": "Bedroom 3",
+        "trade": "Joinery",
+        "type": "Joinery Door - Missing item",
+        "description": "Unfilled screw holes on door edge"
+      },
+      "manual": {
+        "location": "Bedroom 3",
+        "trade": "Joinery",
+        "type": "Joinery Door - Missing item",
+        "description": "Missing hinge on the frame."
+      }
+    },
+    {
+      "unit": "Q545",
+      "snag": "0540",
+      "image": "assets/review/q545-0540.jpg",
+      "ai": {
+        "location": "Parking Approach",
+        "trade": "Civil",
+        "type": "Floors - Not Leveled/Settelment",
+        "description": "Sunken service cover with trip edge"
+      },
+      "manual": {
+        "location": "Parking Approach",
+        "trade": "Civil",
+        "type": "Floors - Not Leveled/Settelment",
+        "description": "Misaligned drainage covers with interlock"
+      }
+    },
+    {
+      "unit": "Q545",
+      "snag": "0214",
+      "image": "assets/review/q545-0214.jpg",
+      "ai": {
+        "location": "Bedroom 2",
+        "trade": "Civil",
+        "type": "Wall - Finishing",
+        "description": "Unfinished plaster smear above sliding door"
+      },
+      "manual": {
+        "location": "Bedroom 2",
+        "trade": "Civil",
+        "type": "Wall - Finishing",
+        "description": "Paint patches at curtain wall jambs"
+      }
+    }
+  ]
+}
