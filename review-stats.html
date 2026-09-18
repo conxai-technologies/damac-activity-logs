@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DAMAC snagging pilot &mdash; review stats</title>
+<meta name="description" content="What DAMAC's review deleted, changed and accepted across five villas.">
+<style>
+
+:root{
+  --page:#eef0ee; --surface:#ffffff; --panel:#f7f8f7;
+  --ink:#14171a; --ink2:#4d545c; --muted:#858d95;
+  --line:#dcdfdc; --line2:#eaece9;
+  --c-qa:#8a5cc4; --c-mep:#2f6ea8; --c-cap:#2f6f4f; --c-proc:#c98a1e;
+  --warn:#a2373f;
+  /* chart hues, validated as a categorical set against the light surface */
+  --c-count:#2f6ea8; --c-del:#a2373f; --c-chg:#a8720f;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--page);color:var(--ink);
+  font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,"Roboto Mono",monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:34px 22px 90px}
+
+.top{padding-bottom:0;border-bottom:2px solid var(--ink);margin-bottom:22px}
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.brand-logos{display:flex;justify-content:flex-end;align-items:center;gap:18px}
+.brand-logos img{display:block;width:auto;max-width:260px;height:auto;max-height:40px;object-fit:contain}
+.brand-logos img[alt="DAMAC"]{max-height:16px}
+.conxai-logo{display:block;width:auto;max-width:190px;height:auto;max-height:52px;object-fit:contain}
+.top-inner{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;justify-content:space-between}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  font-weight:700;margin:0 0 7px}
+h1{font-size:34px;line-height:1.05;margin:0;letter-spacing:-.02em;font-weight:680}
+.subline{color:var(--ink2);font-size:13.5px;margin:9px 0 0;max-width:60ch}
+.provenance{text-align:right;font-size:12px;color:var(--muted);line-height:1.75;flex:none}
+.provenance b{color:var(--ink2);font-weight:600}
+
+.tabs{display:flex;gap:2px;margin:18px 0 -2px}
+.tab{display:block;padding:9px 16px 10px;font-size:13.5px;font-weight:600;color:var(--ink2);
+  text-decoration:none;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;
+  position:relative;top:2px}
+.tab:hover{color:var(--ink);background:rgba(255,255,255,.6)}
+.tab[aria-current="page"]{background:var(--surface);color:var(--ink);border-color:var(--ink);
+  border-bottom:2px solid var(--surface)}
+.tab:focus-visible{outline:2px solid #1b6fc4;outline-offset:-2px}
+
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  margin-bottom:26px}
+.strip>div{background:var(--surface);padding:14px 16px}
+.strip .k{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);font-weight:650;line-height:1.35}
+.strip .v{display:block;font-size:21px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.strip .v .sm{font-size:14.5px;letter-spacing:-.01em;white-space:nowrap}
+.strip .s{display:block;font-size:11.6px;color:var(--ink2);margin-top:3px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;
+  margin-bottom:20px}
+.card-head{margin-bottom:14px}
+h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
+.card-sub{color:var(--ink2);font-size:12.8px;margin:5px 0 0}
+
+.warn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  margin-left:5px;border-radius:50%;background:var(--warn);color:#fff;font-size:9.5px;
+  font-weight:800;vertical-align:middle;cursor:help;position:relative}
+.warn:not([data-tip]){cursor:default}
+.warn[data-tip]:hover::after,.warn[data-tip]:focus::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);
+  left:50%;transform:translateX(-50%);width:max-content;max-width:250px;text-align:left;
+  background:var(--ink);color:#fff;font-size:11.5px;font-weight:400;line-height:1.45;
+  padding:8px 10px;border-radius:7px;z-index:20;pointer-events:none}
+
+.notes{margin-top:26px;font-size:12.4px;color:var(--ink2);line-height:1.75}
+.notes h2{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  margin:0 0 8px;font-weight:700}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin-bottom:6px}
+.foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:11.8px;color:var(--muted);line-height:1.7}
+.foot a{color:var(--ink2)}
+
+@media (max-width:720px){
+  .wrap{padding:24px 15px 70px}
+  h1{font-size:27px}
+  .provenance{text-align:left}
+  .brand-logos img[alt="DAMAC"]{max-height:14px}
+  .conxai-logo{max-width:140px}
+  .tabs{margin-top:14px}
+  .tab{padding:8px 12px 9px;font-size:12.5px}
+}
+@media print{
+  body{background:#fff} .tabs{display:none} .card{break-inside:avoid}
+}
+
+/* ---------------------------------------------- the review stats page --- */
+.sec-head{margin:30px 0 14px}
+.after{margin:12px 0 0;font-size:12.6px;color:var(--ink2)}
+.between{margin:16px 0 12px;font-size:12.6px;color:var(--ink2);max-width:82ch}
+
+.scope-cols{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:24px;align-items:start}
+.prose{font-size:12.9px;color:var(--ink2);line-height:1.65;max-width:72ch}
+.prose p{margin:0 0 11px}
+.prose h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:700;margin:16px 0 5px}
+.prose .lede{color:var(--ink);font-weight:600}
+.prose b{color:var(--ink);font-weight:650}
+.eq{display:inline-block;font-size:12.2px;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line2);border-radius:7px;padding:7px 11px;margin-top:2px}
+
+.legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12px;color:var(--ink2);margin-bottom:14px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend b{color:var(--ink);font-weight:700}
+.sw{display:block;width:11px;height:11px;border-radius:2px}
+.sw.deleted,.seg.deleted{background:var(--c-del)}
+.sw.changed,.seg.changed{background:var(--c-chg)}
+.sw.untouched,.seg.untouched{background:var(--c-count)}
+
+.chart{margin-bottom:2px}
+.srow{display:flex;align-items:center;gap:12px;padding:5px 0}
+.sunit{flex:0 0 64px;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none}
+.sunit:hover{text-decoration:underline}
+.strack{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
+.sbar{display:flex;gap:2px;height:18px;min-width:2px}
+.seg{display:block;min-width:3px}
+.seg:first-child{border-radius:4px 0 0 4px}
+.seg:last-child{border-radius:0 4px 4px 0}
+.slab{font-size:12px;color:var(--ink2);font-weight:600;flex:none}
+.sout{flex:0 0 172px;display:flex;justify-content:flex-end;gap:12px;font-size:12.5px;
+  font-weight:700}
+.sout .o{min-width:44px;text-align:right}
+.o.deleted{color:var(--c-del)} .o.changed{color:var(--c-chg)} .o.untouched{color:var(--c-count)}
+
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.tblwrap.narrow{max-width:560px}
+table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
+.dt th,.dt td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line2);
+  white-space:nowrap;vertical-align:top}
+.dt td.wrap{white-space:normal}
+.dt thead th{background:var(--panel);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink2);font-weight:700;border-bottom:1px solid var(--line)}
+.dt th.num,.dt td.num,.dt td.meter{text-align:right}
+.dt td.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.dt tbody th{font-weight:600;color:var(--ink)}
+.dt tbody tr:hover td{background:#fafbfa}
+.dt tfoot th,.dt tfoot td{background:var(--panel);font-weight:700;border-bottom:none;
+  border-top:1px solid var(--line)}
+.dt .sub{display:block;font-size:10.8px;font-weight:500;color:var(--muted);
+  font-family:ui-sans-serif,system-ui,sans-serif}
+.dt th.wide{min-width:132px}
+
+.meter{min-width:132px}
+.mtrack{display:block;height:8px;border-radius:4px;background:var(--surface);
+  border:1px solid var(--line2);overflow:hidden;margin-bottom:4px}
+.dt tfoot .mtrack{background:var(--surface)}
+.mtrack i{display:block;height:100%;background:var(--c-chg);border-radius:4px;min-width:2px}
+.mval{font-size:12.6px;font-weight:700}
+
+.exgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:20px}
+.card.ex{margin-bottom:0;padding:16px}
+.ex-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:13px}
+.ex-head h3{font-size:16px;margin:0;font-weight:700;letter-spacing:-.01em}
+.ex-tag{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--c-chg);background:#fdf5e6;border:1px solid #f0e0bd;border-radius:5px;
+  padding:2px 7px;flex:none}
+.ex-photo{display:block;border-radius:8px;overflow:hidden;border:1px solid var(--line2);
+  margin-bottom:13px;background:var(--panel)}
+.ex-photo img{display:block;width:100%;height:330px;object-fit:contain}
+.ex-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ex-side{border:1px solid var(--line2);border-radius:9px;padding:0 11px 10px;
+  border-top:3px solid var(--line);background:var(--panel)}
+.ex-side.is-ai{border-top-color:var(--c-count)}
+.ex-side.is-man{border-top-color:var(--c-chg);background:var(--surface)}
+.ex-side h4{font-size:11px;margin:0;padding:10px 0 8px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink2);border-bottom:1px solid var(--line2)}
+.ex-dl{margin:0}
+.ex-f{padding:7px 0;border-top:1px solid #f2f3f2}
+.ex-f:first-child{border-top:none}
+.ex-f dt{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  font-weight:650}
+.ex-f dd{margin:2px 0 0;font-size:12.4px;color:var(--ink2);line-height:1.45;white-space:normal}
+.ex-f.is-diff{margin:0 -11px;padding:7px 8px 7px 11px;border-left:3px solid var(--c-chg);
+  background:#fdf7ec}
+.ex-f.is-diff dd{color:var(--ink);font-weight:600}
+
+@media (max-width:900px){
+  .scope-cols{grid-template-columns:1fr}
+  .tblwrap.narrow{max-width:none}
+}
+@media (max-width:720px){
+  .srow{flex-wrap:wrap;gap:8px}
+  .sunit{flex:0 0 auto}
+  .sout{flex:0 0 auto;justify-content:flex-start}
+  .exgrid{grid-template-columns:1fr}
+  .ex-cols{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="brand-row">
+    <div class="brand-logos" aria-label="Project and technology logos">
+      <img src="assets/damac.png" alt="DAMAC">
+    </div>
+    <img class="conxai-logo" src="assets/conxai.png" alt="Conxai">
+  </div>
+  <div class="top-inner">
+    <div>
+      <p class="eyebrow">DAMAC &times; CONXAI snagging pilot</p>
+      <h1>Review Stats</h1>
+      <p class="subline">Across five villas, 836 of the 2,855 material snags were deleted (29.3%), 865 were changed (30.3%), and 1,154 were accepted exactly as issued (40.4%).</p>
+    </div>
+    <div class="provenance">Source <b>DAMAC QA/QC Revision Report</b><br>Villas <b>5</b> &middot; Report dated <b>2026-09-18</b><br>Generated <b>18 Sep 2026</b></div>
+  </div>
+  <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html">Activity logs</a><a class="tab" href="review-stats.html" aria-current="page">Review Stats</a></nav>
+</header>
+
+<div class="strip"><div><span class="k">Villas reviewed</span><span class="v mono">5</span><span class="s">in this report</span></div><div><span class="k">Material snags</span><span class="v mono">2,855</span><span class="s">every figure counts over these</span></div><div><span class="k">Deleted</span><span class="v mono">836</span><span class="s">29.3%, removed from the board</span></div><div><span class="k">Changed</span><span class="v mono">865</span><span class="s">30.3%, kept but edited</span></div><div><span class="k">Accepted as issued</span><span class="v mono">1,154</span><span class="s">40.4%, untouched</span></div></div>
+
+
+<article class="card">
+  <div class="card-head">
+    <h2>Scope</h2>
+    <p class="card-sub">For each villa, how many of the snags were deleted, how many were changed, and how many were accepted without change. It covers five villas.</p>
+  </div>
+  <div class="scope-cols">
+    <div class="tblwrap narrow">
+      <table class="dt">
+        <thead><tr><th>Villa</th><th class="num">Material snags</th></tr></thead>
+        <tbody>
+      <tr><th class="mono">Q844</th>
+        <td class="num">328</td></tr>
+      <tr><th class="mono">Q545</th>
+        <td class="num">357</td></tr>
+      <tr><th class="mono">Q845</th>
+        <td class="num">617</td></tr>
+      <tr><th class="mono">BL515</th>
+        <td class="num">538</td></tr>
+      <tr><th class="mono">BL109</th>
+        <td class="num">1,015</td></tr></tbody>
+        <tfoot><tr><th class="mono">Total</th>
+          <td class="num">2,855</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="prose">
+      <p class="lede">Every figure in this report is counted over the 2,855 material snags only.</p>
+      <h3>What each term means</h3>
+      <p>Every material snag has exactly one outcome: it was deleted, it was changed, or it was accepted untouched.</p>
+      <h3>The denominator</h3>
+      <p>Every percentage in this report uses the same denominator: the <b>material snags issued for that villa</b>. Deletions, changes and individual field changes are all expressed as a share of that one number, so any two figures can be compared directly.</p>
+      <p class="eq mono">836 deleted + 865 changed + 1,154 untouched
+        = 2,855</p>
+    </div>
+  </div>
+</article>
+
+
+<article class="card">
+  <div class="card-head">
+    <h2>What the review did with each villa's snags</h2>
+    <p class="card-sub">Bar length is the villa's material snag count, split into the three
+    outcomes. Villa names link through to the activity log.</p>
+  </div>
+  <div class="legend"><span><i class="sw deleted"></i>Deleted <b class="mono">836</b></span><span><i class="sw changed"></i>Changed <b class="mono">865</b></span><span><i class="sw untouched"></i>Accepted as issued <b class="mono">1,154</b></span></div>
+  <div class="chart">
+    <div class="srow">
+      <a class="sunit mono" href="index.html#Q844"
+         title="Open Q844 in the activity log">Q844</a>
+      <div class="strack">
+        <div class="sbar" style="width:32.315%"><i class="seg deleted" style="flex:55" title="Q844: 55 deleted (16.8%)"></i><i class="seg changed" style="flex:85" title="Q844: 85 changed (25.9%)"></i><i class="seg untouched" style="flex:188" title="Q844: 188 accepted as issued (57.3%)"></i></div>
+        <span class="slab mono">328</span>
+      </div>
+      <div class="sout">
+        <span class="o deleted mono">55</span>
+        <span class="o changed mono">85</span>
+        <span class="o untouched mono">188</span>
+      </div>
+    </div>
+    <div class="srow">
+      <a class="sunit mono" href="index.html#Q545"
+         title="Open Q545 in the activity log">Q545</a>
+      <div class="strack">
+        <div class="sbar" style="width:35.172%"><i class="seg deleted" style="flex:142" title="Q545: 142 deleted (39.8%)"></i><i class="seg changed" style="flex:132" title="Q545: 132 changed (37.0%)"></i><i class="seg untouched" style="flex:83" title="Q545: 83 accepted as issued (23.2%)"></i></div>
+        <span class="slab mono">357</span>
+      </div>
+      <div class="sout">
+        <span class="o deleted mono">142</span>
+        <span class="o changed mono">132</span>
+        <span class="o untouched mono">83</span>
+      </div>
+    </div>
+    <div class="srow">
+      <a class="sunit mono" href="index.html#Q845"
+         title="Open Q845 in the activity log">Q845</a>
+      <div class="strack">
+        <div class="sbar" style="width:60.788%"><i class="seg deleted" style="flex:258" title="Q845: 258 deleted (41.8%)"></i><i class="seg changed" style="flex:202" title="Q845: 202 changed (32.7%)"></i><i class="seg untouched" style="flex:157" title="Q845: 157 accepted as issued (25.4%)"></i></div>
+        <span class="slab mono">617</span>
+      </div>
+      <div class="sout">
+        <span class="o deleted mono">258</span>
+        <span class="o changed mono">202</span>
+        <span class="o untouched mono">157</span>
+      </div>
+    </div>
+    <div class="srow">
+      <a class="sunit mono" href="index.html#BL515"
+         title="Open BL515 in the activity log">BL515</a>
+      <div class="strack">
+        <div class="sbar" style="width:53.005%"><i class="seg deleted" style="flex:56" title="BL515: 56 deleted (10.4%)"></i><i class="seg changed" style="flex:37" title="BL515: 37 changed (6.9%)"></i><i class="seg untouched" style="flex:445" title="BL515: 445 accepted as issued (82.7%)"></i></div>
+        <span class="slab mono">538</span>
+      </div>
+      <div class="sout">
+        <span class="o deleted mono">56</span>
+        <span class="o changed mono">37</span>
+        <span class="o untouched mono">445</span>
+      </div>
+    </div>
+    <div class="srow">
+      <a class="sunit mono" href="index.html#BL109"
+         title="Open BL109 in the activity log">BL109</a>
+      <div class="strack">
+        <div class="sbar" style="width:100.000%"><i class="seg deleted" style="flex:325" title="BL109: 325 deleted (32.0%)"></i><i class="seg changed" style="flex:409" title="BL109: 409 changed (40.3%)"></i><i class="seg untouched" style="flex:281" title="BL109: 281 accepted as issued (27.7%)"></i></div>
+        <span class="slab mono">1,015</span>
+      </div>
+      <div class="sout">
+        <span class="o deleted mono">325</span>
+        <span class="o changed mono">409</span>
+        <span class="o untouched mono">281</span>
+      </div>
+    </div></div>
+</article>
+
+
+<article class="card">
+  <div class="card-head">
+    <h2>Deletions</h2>
+    <p class="card-sub">Snags removed from the board, as a share of material snags.</p>
+  </div>
+  <div class="tblwrap">
+    <table class="dt">
+      <thead><tr><th>Villa</th><th class="num">Material</th><th class="num">Deleted</th>
+        <th class="num">% deleted</th></tr></thead>
+      <tbody>
+      <tr><th class="mono">Q844</th>
+        <td class="num">328</td>
+        <td class="num">55</td>
+        <td class="num">16.8%</td></tr>
+      <tr><th class="mono">Q545</th>
+        <td class="num">357</td>
+        <td class="num">142</td>
+        <td class="num">39.8%</td></tr>
+      <tr><th class="mono">Q845</th>
+        <td class="num">617</td>
+        <td class="num">258</td>
+        <td class="num">41.8%</td></tr>
+      <tr><th class="mono">BL515</th>
+        <td class="num">538</td>
+        <td class="num">56</td>
+        <td class="num">10.4%</td></tr>
+      <tr><th class="mono">BL109</th>
+        <td class="num">1,015</td>
+        <td class="num">325</td>
+        <td class="num">32.0%</td></tr></tbody>
+      <tfoot><tr><th class="mono">Total</th>
+        <td class="num">2,855</td>
+        <td class="num">836</td>
+        <td class="num">29.3%</td></tr></tfoot>
+    </table>
+  </div>
+  <p class="after">The rate ranges from 10.4% on BL515 to 41.8% on Q845.</p>
+</article>
+
+
+<article class="card">
+  <div class="card-head">
+    <h2>Changes by field</h2>
+    <p class="card-sub">The board records which field was edited. The five fields it tracks are:</p>
+  </div>
+  <div class="tblwrap narrow">
+    <table class="dt">
+      <thead><tr><th>Field</th><th>What it records</th></tr></thead>
+      <tbody>
+      <tr><th>Priority</th><td class="wrap">Urgency of the defect: low, medium or high</td></tr>
+      <tr><th>Description</th><td class="wrap">The written text of the defect</td></tr>
+      <tr><th>Trade</th><td class="wrap">Responsible discipline: Civil, MEP, Joinery, Aluminium</td></tr>
+      <tr><th>Location</th><td class="wrap">Where in the villa the defect sits</td></tr>
+      <tr><th>Photo</th><td class="wrap">The attached evidence image</td></tr></tbody>
+    </table>
+  </div>
+  <p class="between">Each cell is the number of snags on which that field was changed, with its share of the villa&#x27;s material snags in brackets. The last column is the share of the villa&#x27;s snags changed in any field at all (i.e. one field or more).</p>
+  <div class="tblwrap">
+    <table class="dt">
+      <thead><tr><th>Villa</th><th class="num">Material</th><th class="num">Priority</th><th class="num">Description</th><th class="num">Trade</th><th class="num">Location</th><th class="num">Photo</th>
+        <th class="num">Changed</th><th class="num wide">% snags changed</th></tr></thead>
+      <tbody>
+      <tr><th class="mono">Q844</th>
+        <td class="num">328</td>
+        <td class="num">20<span class="sub">6.1%</span></td><td class="num">77<span class="sub">23.5%</span></td><td class="num">6<span class="sub">1.8%</span></td><td class="num">2<span class="sub">0.6%</span></td><td class="num">1<span class="sub">0.3%</span></td>
+        <td class="num">85</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:25.90%"
+            title="Q844: 85 of 328 snags changed"></i></span>
+          <span class="mval mono">25.9%</span>
+        </td></tr>
+      <tr><th class="mono">Q545</th>
+        <td class="num">357</td>
+        <td class="num">101<span class="sub">28.3%</span></td><td class="num">52<span class="sub">14.6%</span></td><td class="num">0</td><td class="num">0</td><td class="num">1<span class="sub">0.3%</span></td>
+        <td class="num">132</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:37.00%"
+            title="Q545: 132 of 357 snags changed"></i></span>
+          <span class="mval mono">37.0%</span>
+        </td></tr>
+      <tr><th class="mono">Q845</th>
+        <td class="num">617</td>
+        <td class="num">169<span class="sub">27.4%</span></td><td class="num">60<span class="sub">9.7%</span></td><td class="num">1<span class="sub">0.2%</span></td><td class="num">0</td><td class="num">0</td>
+        <td class="num">202</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:32.70%"
+            title="Q845: 202 of 617 snags changed"></i></span>
+          <span class="mval mono">32.7%</span>
+        </td></tr>
+      <tr><th class="mono">BL515</th>
+        <td class="num">538</td>
+        <td class="num">33<span class="sub">6.1%</span></td><td class="num">6<span class="sub">1.1%</span></td><td class="num">3<span class="sub">0.6%</span></td><td class="num">0</td><td class="num">0</td>
+        <td class="num">37</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:6.90%"
+            title="BL515: 37 of 538 snags changed"></i></span>
+          <span class="mval mono">6.9%</span>
+        </td></tr>
+      <tr><th class="mono">BL109</th>
+        <td class="num">1,015</td>
+        <td class="num">303<span class="sub">29.9%</span></td><td class="num">193<span class="sub">19.0%</span></td><td class="num">5<span class="sub">0.5%</span></td><td class="num">0</td><td class="num">0</td>
+        <td class="num">409</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:40.30%"
+            title="BL109: 409 of 1,015 snags changed"></i></span>
+          <span class="mval mono">40.3%</span>
+        </td></tr></tbody>
+      <tfoot>
+      <tr><th class="mono">Total</th>
+        <td class="num">2,855</td>
+        <td class="num">626<span class="sub">21.9%</span></td><td class="num">388<span class="sub">13.6%</span></td><td class="num">15<span class="sub">0.5%</span></td><td class="num">2<span class="sub">0.1%</span></td><td class="num">2<span class="sub">0.1%</span></td>
+        <td class="num">865</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:30.30%"
+            title="Total: 865 of 2,855 snags changed"></i></span>
+          <span class="mval mono">30.3%</span>
+        </td></tr></tfoot>
+    </table>
+  </div>
+  <p class="after">A snag can be edited in more than one field, so the field columns sum to more than the changed column.</p>
+</article>
+
+
+<div class="card-head sec-head">
+  <h2>Example comment changes</h2>
+  <p class="card-sub">Four snags walked through in the deck this report summarises, each on the
+  photo it was raised against. The edited field is marked on both sides.</p>
+</div>
+<div class="exgrid">
+<article class="card ex">
+  <div class="ex-head">
+    <h3 class="mono">BL109 &middot; #0040</h3>
+    <span class="ex-tag">description edited</span>
+  </div>
+  <div class="ex-body">
+    <a class="ex-photo" href="assets/review/bl109-0040.jpg" target="_blank" rel="noopener"
+       title="Open the full photo">
+      <img src="assets/review/bl109-0040.jpg" loading="lazy" decoding="async"
+           alt="Snag 0040 in BL109, boxed on the capture photo">
+    </a>
+    <div class="ex-cols"><div class="ex-side is-ai"><h4>AI output</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Bathroom 2</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Sandfilling/Grouting improper</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Wall tiles: inconsistent joint width, unsealed gaps and corners</dd></div></dl></div><div class="ex-side is-man"><h4>Manual edit</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Bathroom 2</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Sandfilling/Grouting improper</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Inconsistent width between tiles and poor grouting.</dd></div></dl></div></div>
+  </div>
+</article>
+<article class="card ex">
+  <div class="ex-head">
+    <h3 class="mono">BL109 &middot; #0472</h3>
+    <span class="ex-tag">description edited</span>
+  </div>
+  <div class="ex-body">
+    <a class="ex-photo" href="assets/review/bl109-0472.jpg" target="_blank" rel="noopener"
+       title="Open the full photo">
+      <img src="assets/review/bl109-0472.jpg" loading="lazy" decoding="async"
+           alt="Snag 0472 in BL109, boxed on the capture photo">
+    </a>
+    <div class="ex-cols"><div class="ex-side is-ai"><h4>AI output</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Bedroom 3</dd></div><div class="ex-f"><dt>Trade</dt><dd>Joinery</dd></div><div class="ex-f"><dt>Type</dt><dd>Joinery Door - Missing item</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Unfilled screw holes on door edge</dd></div></dl></div><div class="ex-side is-man"><h4>Manual edit</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Bedroom 3</dd></div><div class="ex-f"><dt>Trade</dt><dd>Joinery</dd></div><div class="ex-f"><dt>Type</dt><dd>Joinery Door - Missing item</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Missing hinge on the frame.</dd></div></dl></div></div>
+  </div>
+</article>
+<article class="card ex">
+  <div class="ex-head">
+    <h3 class="mono">Q545 &middot; #0540</h3>
+    <span class="ex-tag">description edited</span>
+  </div>
+  <div class="ex-body">
+    <a class="ex-photo" href="assets/review/q545-0540.jpg" target="_blank" rel="noopener"
+       title="Open the full photo">
+      <img src="assets/review/q545-0540.jpg" loading="lazy" decoding="async"
+           alt="Snag 0540 in Q545, boxed on the capture photo">
+    </a>
+    <div class="ex-cols"><div class="ex-side is-ai"><h4>AI output</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Parking Approach</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Floors - Not Leveled/Settelment</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Sunken service cover with trip edge</dd></div></dl></div><div class="ex-side is-man"><h4>Manual edit</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Parking Approach</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Floors - Not Leveled/Settelment</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Misaligned drainage covers with interlock</dd></div></dl></div></div>
+  </div>
+</article>
+<article class="card ex">
+  <div class="ex-head">
+    <h3 class="mono">Q545 &middot; #0214</h3>
+    <span class="ex-tag">description edited</span>
+  </div>
+  <div class="ex-body">
+    <a class="ex-photo" href="assets/review/q545-0214.jpg" target="_blank" rel="noopener"
+       title="Open the full photo">
+      <img src="assets/review/q545-0214.jpg" loading="lazy" decoding="async"
+           alt="Snag 0214 in Q545, boxed on the capture photo">
+    </a>
+    <div class="ex-cols"><div class="ex-side is-ai"><h4>AI output</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Bedroom 2</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Finishing</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Unfinished plaster smear above sliding door</dd></div></dl></div><div class="ex-side is-man"><h4>Manual edit</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Bedroom 2</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Finishing</dd></div><div class="ex-f is-diff"><dt>Description</dt><dd>Paint patches at curtain wall jambs</dd></div></dl></div></div>
+  </div>
+</article></div>
+
+<div class="notes">
+  <h2>Reading these figures</h2>
+  <ul>
+    <li><b>Deleted</b>, <b>changed</b> and <b>accepted as issued</b> are exclusive: every
+      material snag falls in exactly one, and the three sum to the villa's total.</li>
+    <li>A <span class="warn">!</span> marks a figure that does not agree with the numbers
+      recorded beside it. Hover it for the arithmetic. Values are shown exactly as the report
+      records them &mdash; nothing has been corrected.</li>
+    <li>This report covers 5 villas. C625F and K148 appear in the
+      <a href="index.html">activity log</a> but not here.</li>
+    <li>The example photos are exported from
+      <span class="mono">Damac Snagging Updates 18-09-2026.pptx</span> and served from this site,
+      so nothing here depends on an external account.
+      Slides 6 and 7 of the deck are identical; the content is carried once here. That deck's own figures differ from this report on
+      three fields &mdash; Description, Location and Photo. The report's numbers are the ones
+      shown here.</li>
+  </ul>
+</div>
+
+<p class="foot">
+  Generated from <span class="mono">data/review-stats.json</span> by
+  <span class="mono">build_review.py</span> &middot; 18 Sep 2026.
+  Tables and wording from <b>DAMAC QA/QC Revision Report</b>, dated
+  2026-09-18.
+</p>
+
+</div>
+</body>
+</html>
