@@ -1,0 +1,14 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # The estate's secret scrub over everything this repository would publish.
+  # Its red is a disclosure and belongs to whoever pushed, not to the build.
+  secret-scan:
+    permissions:
+      contents: read
+    uses: conxai-technologies/ops-workflows/.github/workflows/secret-scan.yml@v1
+    secrets: inherit
