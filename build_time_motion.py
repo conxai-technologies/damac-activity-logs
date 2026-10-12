@@ -52,12 +52,19 @@ PEOPLE = {
 }
 SLOTS = [slot for slot, _ in PEOPLE.values()]
 
-# Not timed in the sheet, and the same for every unit.
+UNLOGGED = "Start and end time not logged"
+
+# Minutes for an activity the sheet leaves blank, by person. They count towards
+# the unit's totals, and the row says its times were not logged.
+UNTIMED = {"meps": 30}
+
+# Not in the sheet, and the same for every unit: (test, who, minutes, status,
+# note). Their minutes are shown but kept out of the unit totals; the flood
+# test is the contractor's time.
 TESTS = [
-    ("Flood test", "Contractor", "done", "Done by contractor",
-     "Already conducted by the contractor. Results are incorporated during QA and MEP snagging."),
-    ("Static / spray test", "", "pending", "Pending",
-     "Conducted at a later stage of snagging."),
+    ("Flood test", "Contractor", 30, "Done by contractor",
+     f"Results are incorporated during QA and MEP snagging. {UNLOGGED}."),
+    ("Static / spray test", "", 20, "Completed", f"{UNLOGGED}."),
 ]
 
 STATE_TEXT = {"pending": "Activity pending", "separate": "Not recorded separately"}
@@ -197,6 +204,9 @@ def read_unit(name, ws, wsv):
                                           f"the {fmt_dur(parent['minutes'])} recorded for {label}.")
         activities.append(dict(parent, label=label, slot=slot, person=person,
                                subs=subs, other=other))
+    for a in activities:
+        if a["state"] == "pending" and a["slot"] in UNTIMED:
+            a.update(state="recorded", minutes=UNTIMED[a["slot"]], untimed=True)
     activities.sort(key=lambda a: SLOTS.index(a["slot"]))
     return {"name": name, "slug": re.sub(r"[^A-Za-z0-9]+", "-", name).strip("-"),
             "activities": activities, "sheet_totals": totals}
@@ -210,7 +220,7 @@ def check_totals(unit):
         acts = [a for a in unit["activities"]
                 if not word or a["sheet_label"].lower().startswith(word)]
         slots = frozenset(a["slot"] for a in acts) if word else frozenset(SLOTS)
-        computed = sum(a["minutes"] or 0 for a in acts)
+        computed = sum(a["minutes"] or 0 for a in acts if not a.get("untimed"))
         if isinstance(stated, (int, float)) and round(stated) != computed:
             flags[slots] = (f"The sheet's {label!r} says {fmt_dur(round(stated))}; "
                             f"its rows add up to {fmt_dur(computed)}.")
@@ -306,8 +316,9 @@ def track(axis, bars=(), wash=(), note=""):
     spans += "".join(
         f'<span class="bar" style="left:{pos(s, axis):.3f}%;width:{pos(e, axis) - pos(s, axis):.3f}%"'
         f' title="{esc(tip)}"></span>' for s, e, tip in bars)
-    note = f'<span class="trk-note">{note}</span>' if note else ""
-    return f'<div class="c-trk"><div class="trk">{ticks}{spans}{note}</div></div>'
+    if note:  # words, not a timeline: no gridlines behind them
+        return f'<div class="c-trk"><div class="trk"><span class="trk-note">{note}</span></div></div>'
+    return f'<div class="c-trk"><div class="trk">{ticks}{spans}</div></div>'
 
 
 def time_cell(x):
@@ -318,6 +329,8 @@ def time_cell(x):
     return f'<div class="c-time">{pill(x["state"])}{warn(x["flags"])}</div>'
 
 
+NONE = "&mdash;"  # no clock times
+
 CHEVRON = ('<svg class="chev" viewBox="0 0 16 16" aria-hidden="true">'
            '<path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" '
            'stroke-linecap="round" stroke-linejoin="round"/></svg>')
@@ -326,7 +339,7 @@ CHEVRON = ('<svg class="chev" viewBox="0 0 16 16" aria-hidden="true">'
 def render_activity(unit, a, axis):
     bars = [(s, e, f'{unit["name"]} · {a["label"]} · {plain(fmt_windows([(s, e)]))}')
             for s, e in a["sessions"]]
-    logged = fmt_windows(a["sessions"], "<br>") if a["sessions"] else "&mdash;"
+    logged = fmt_windows(a["sessions"], "<br>") if a["sessions"] else NONE
     hint = ""
     if a["subs"]:
         n = len(a["subs"])
@@ -335,8 +348,8 @@ def render_activity(unit, a, axis):
     name = (f'<div class="c-name">{CHEVRON if a["subs"] else "<i class=chev-sp></i>"}'
             f'<i class="sw"></i><span class="nm"><b>{esc(a["label"])}</b>'
             f'<span class="who">{esc(a["person"])}</span>{hint}</span></div>')
-    row = (f'{name}<div class="c-log mono">{logged}</div>{time_cell(a)}'
-           f'{track(axis, bars)}')
+    row = (f'{name}<div class="c-log mono{" none" if logged == NONE else ""}">{logged}</div>{time_cell(a)}'
+           f'{track(axis, bars, note=f"{UNLOGGED}." if a.get("untimed") else "")}')
     if not a["subs"]:
         return f'<div class="act p-{a["slot"]}"><div class="row">{row}</div></div>'
 
@@ -362,14 +375,15 @@ def render_activity(unit, a, axis):
 
 def render_tests(axis):
     out = []
-    for label, who, state, status, note in TESTS:
+    for label, who, minutes, status, note in TESTS:
         out.append(
             f'<div class="act test"><div class="row">'
             f'<div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i>'
             f'<span class="nm"><b>{esc(label)}</b>'
             + (f'<span class="who">{esc(who)}</span>' if who else "") + '</span></div>'
-            f'<div class="c-log">&mdash;</div>'
-            f'<div class="c-time"><span class="st st-{state}">{esc(status)}</span></div>'
+            f'<div class="c-log none">{NONE}</div>'
+            f'<div class="c-time stack"><span class="mins mono">{fmt_dur(minutes)}</span>'
+            f'<span class="st st-done">{esc(status)}</span></div>'
             f'{track(axis, note=esc(note))}</div></div>')
     return "".join(out)
 
@@ -467,7 +481,8 @@ def render_compare(units):
         by = {a["slot"]: a for a in u["activities"]}
         segs = "".join(
             f'<i class="p-{s}" style="flex:{by[s]["minutes"]}" title="{esc(u["name"])} · '
-            f'{esc(labels[s])} ({esc(names[s])}) · {fmt_dur(by[s]["minutes"])}"></i>'
+            f'{esc(labels[s])} ({esc(names[s])}) · {fmt_dur(by[s]["minutes"])}'
+            f'{" · " + UNLOGGED.lower() if by[s].get("untimed") else ""}"></i>'
             for s in SLOTS if s in by and by[s]["state"] == "recorded")
         notes = []
         for state, word in (("pending", "pending"), ("separate", "not recorded separately")):
@@ -656,6 +671,7 @@ def render(site, units, everyone):
 .who,.hint{{font-size:11.5px;color:var(--muted)}}
 .c-log{{font-size:12px;color:var(--ink2);line-height:1.5}}
 .c-time{{justify-content:flex-end;text-align:right;gap:0}}
+.row>.c-time.stack{{flex-direction:column;align-items:flex-end;justify-content:center;gap:4px}}
 .mins{{font-size:13px;font-weight:650}}
 .chev{{width:16px;height:16px;flex:none;color:var(--muted);transition:transform .15s}}
 .chev-sp{{width:16px;flex:none}}
@@ -698,14 +714,13 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
 .act.test .row>div:not(.c-trk){{padding:8px 0}}
 .act.test .trk{{min-height:36px}}
 .sw-test{{background:none;border:1.5px solid var(--muted)}}
-.act.test .tk{{display:none}}
 
 @media (max-width:860px){{
   .row{{grid-template-columns:1fr auto;grid-template-areas:"name time" "log log" "trk trk";gap:0 12px}}
   .c-name{{grid-area:name}} .c-time{{grid-area:time}} .c-log{{grid-area:log}} .c-trk{{grid-area:trk}}
   .row>div.c-log{{padding:0 0 4px 24px}}
   .row.sub>div.c-log{{padding-left:24px}}
-  .row.head .c-log{{display:none}}
+  .row.head .c-log,.row>div.c-log.none{{display:none}}
   .trk{{min-height:26px}}
   .trk-note{{position:static;transform:none;display:block;padding:0 0 10px 24px}}
   .act.test .trk{{min-height:0}}
@@ -748,13 +763,18 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
     <li><b>Not recorded separately</b> means the sheet logs 0 minutes or says so: the time is inside
       the activity total, and so inside Other functional. <b>Activity pending</b> means the sheet's row
       is blank.</li>
-    <li><b>Flood test</b> was already conducted by the contractor on every unit; its results are
-      incorporated during QA and MEP snagging. The <b>static / spray test</b> is pending and is
-      conducted at a later stage of snagging.</li>
+    <li>Where the sheet leaves <b>MEP specialist</b> blank, it is shown as
+      {fmt_dur(UNTIMED["meps"])}, marked <i>{UNLOGGED.lower()}</i>. That time counts towards the
+      unit's MEP and recorded time.</li>
+    <li><b>Flood test</b> was already conducted by the contractor on every unit
+      ({fmt_dur(TESTS[0][2])}); its results are incorporated during QA and MEP snagging. The
+      <b>static / spray test</b> is completed ({fmt_dur(TESTS[1][2])}). Neither has its start and
+      end time logged, and test minutes are not part of the unit totals.</li>
     <li>A <span class="warn">!</span> marks minutes that do not agree with the clock times logged beside
       them, or a sub-task logged outside its activity. Hover it for the detail. Differences of
-      {ROUNDING} minutes or less are rounding and are not marked. Minutes are shown exactly as the
-      sheet records them, and every total is built from them &mdash; nothing has been corrected.</li>{skipped}
+      {ROUNDING} minutes or less are rounding and are not marked. Otherwise minutes are shown exactly
+      as the sheet records them, and every total is built from them &mdash; nothing has been
+      corrected.</li>{skipped}
   </ul>
 </div>
 

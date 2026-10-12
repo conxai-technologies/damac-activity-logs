@@ -37,11 +37,15 @@ QA inspector (QA functional), and capture (iGUIDE or Matterport).
   dropdown onto their sub-tasks (roof, yard; inside cupboard, tile tapping,
   roof) plus **Other functional**: the activity's minutes less its timed
   sub-tasks.
-- **Tests** on every unit: the flood test was already conducted by the
-  contractor, with its results incorporated during QA and MEP snagging; the
-  static / spray test is pending, for a later stage of snagging.
+- **Tests** on every unit: the flood test (30 min) was already conducted by
+  the contractor, with its results incorporated during QA and MEP snagging;
+  the static / spray test (20 min) is completed. Neither has start and end
+  times logged, and test minutes stay out of the unit totals (`TESTS`).
 
-A blank row is shown as **Activity pending**; 0 minutes or "not recorded
+A blank MEP specialist row is shown as 30 minutes, marked *Start and end time
+not logged*, and counts towards the unit's MEP and recorded time (`UNTIMED`);
+the check against the workbook's own totals block leaves it out. Any other
+blank row is shown as **Activity pending**; 0 minutes or "not recorded
 seperately" as **Not recorded separately**. The workbook's minutes are used
 as-is, and where they disagree with the row's own clock times by more than
 2 minutes (`ROUNDING`) the page flags it; smaller differences are rounding.
