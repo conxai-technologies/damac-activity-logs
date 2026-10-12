@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>DAMAC snagging pilot &mdash; activity log</title>
+<title>DAMAC snagging pilot &mdash; archived activities</title>
 <meta name="description" content="Time and effort logged for each unit in the DAMAC x CONXAI snagging pilot.">
 <style>
 
@@ -87,8 +87,11 @@ h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
   .provenance{text-align:left}
   .brand-logos img[alt="DAMAC"]{max-height:14px}
   .conxai-logo{max-width:140px}
-  .tabs{margin-top:14px}
-  .tab{padding:8px 12px 9px;font-size:12.5px}
+  /* too narrow for folder tabs side by side: wrap them as one-line pills */
+  .tabs{flex-wrap:wrap;gap:6px;margin:14px 0 14px}
+  .tab{padding:7px 12px;font-size:12.5px;white-space:nowrap;top:0;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  .tab[aria-current="page"]{background:var(--ink);color:#fff;border:1px solid var(--ink)}
 }
 @media print{
   body{background:#fff} .tabs{display:none} .card{break-inside:avoid}
@@ -207,12 +210,12 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
   <div class="top-inner">
     <div>
       <p class="eyebrow">DAMAC &times; CONXAI snagging pilot</p>
-      <h1>Activity log</h1>
+      <h1>Archived activities</h1>
       <p class="subline">What each unit cost in time &mdash; manual QA and MEP snagging onsite, against photo capture and CONXAI processing. One card per unit.</p>
     </div>
     <div class="provenance">Source <b>Damac snagging schedules &mdash; Activity logs</b><br>Units <b>7</b> &middot; Generated <b>12 Oct 2026</b><br>Times as recorded onsite (GST)</div>
   </div>
-  <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html">Pilot time and motion</a><a class="tab" href="activity-logs.html" aria-current="page">Activity logs</a><a class="tab" href="review-stats.html">Review Stats</a></nav>
+  <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html">Pilot time and motion Lagoons – Ibiza</a><a class="tab" href="time-motion-gems.html">Pilot time and motion Hills – Gems</a><a class="tab" href="review-stats.html">Review Stats</a><a class="tab" href="activity-logs.html" aria-current="page">Archived activities</a></nav>
 </header>
 
 <div class="strip"><div><span class="k">Units</span><span class="v mono">7</span><span class="s">in the pilot</span></div><div><span class="k">Window</span><span class="v mono"><span class="sm">12 Aug &ndash; 22 Aug 2026</span></span><span class="s">first to last logged activity</span></div><div><span class="k">Manual manhours</span><span class="v mono">41h 16m</span><span class="s">QA and MEP snagging, all units</span></div><div><span class="k">Capture manhours</span><span class="v mono">22h 30m</span><span class="s">onsite photo capture</span></div><div><span class="k">Processing time</span><span class="v mono">18h 15m</span><span class="s">elapsed, not manned</span></div></div>

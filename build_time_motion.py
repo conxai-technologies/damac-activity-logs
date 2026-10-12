@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Render data/qaqc-time-motion.xlsx into index.html: the pilot's time and motion.
+"""Render data/qaqc-time-motion.xlsx into the pilot's time and motion pages:
+one page per project (Lagoons - Ibiza at index.html, Hills - Gems beside it).
 
 The workbook has one tab per unit. Down each tab, one row per activity with its
 minutes and its clock times (HHMM, so 957 is 09:57). Each fill colour is a
 different person: the "(total)" row of a colour is that person's activity, and
 the rows below it in the same colour are its sub-tasks. This page lays each
 unit out by person and activity, sub-tasks in a dropdown, with whatever the
-sub-tasks do not account for shown as "Other functional".
+sub-tasks do not account for shown as "Other functional". A tab lands on the
+page whose project its name starts with (see SITES).
 
 As elsewhere on the site, nothing is corrected. A blank row is "Activity
 pending"; 0 minutes or "not recorded seperately" is "Not recorded separately";
-and minutes that disagree with the row's own clock times are flagged on the
-page, not fixed.
+and minutes that disagree with the row's own clock times by more than rounding
+are flagged on the page, not fixed.
 
 Needs openpyxl (pip install openpyxl).
 """
@@ -25,10 +27,19 @@ from theme import GENERATED, esc
 
 ROOT = Path(__file__).parent
 XLSX_PATH = ROOT / "data" / "qaqc-time-motion.xlsx"
-OUT_PATH = ROOT / "index.html"
 
-# Tabs that are not units on the page.
+# One page per project: (theme.PAGES key, workbook tab prefix, page heading).
+# The tab label and file come from theme.PAGES.
+SITES = [
+    ("tm-ibiza", "Ibiza", "Lagoons \u2013 Ibiza"),
+    ("tm-gems", "Gems", "Hills \u2013 Gems"),
+]
+
+# Tabs that are not units on any page.
 EXCLUDE = {"Gems-E511B_old"}  # superseded by Gems-E511B
+
+# Minutes within this of the row's own clock times are rounding, not flagged.
+ROUNDING = 2
 
 # Each fill colour in the sheet is one person, keyed by the Office theme slot
 # the sheet fills with. The page colours keep the sheet's hues (orange, blue,
@@ -103,8 +114,10 @@ def fill_key(cell):
 def session_pairs(ws):
     """Columns of start/end pairs, from the header row. The sheet runs a
     second pair along where an activity was split over two sessions."""
+    def head(col):
+        return re.sub(r"\s*\d+$", "", str(ws.cell(1, col).value or "").strip().lower())
     pairs, c = [], 3
-    while [str(ws.cell(1, c + i).value or "").strip().lower() for i in (0, 1)] == ["start", "end"]:
+    while (head(c), head(c + 1)) == ("start", "end"):
         pairs.append((c, c + 1))
         c += 2
     return pairs
@@ -121,9 +134,10 @@ def read_row(ws, r, pairs):
             flags.append(f"Ends {fmt_clock(e)}, before its start at {fmt_clock(s)}.")
             continue
         sessions.append((s, e))
+    sessions.sort()
     if state == "recorded" and sessions:
         span = sum(e - s for s, e in sessions)
-        if span != minutes:
+        if abs(span - minutes) > ROUNDING:
             flags.append(f"{plain(fmt_windows(sessions))} is {fmt_dur(span)}; "
                          f"the sheet records {fmt_dur(minutes)}.")
     return {"state": state, "minutes": minutes if state == "recorded" else None,
@@ -230,6 +244,14 @@ def read_units():
     mark_repeats(units)
     for u in units:
         u["total_flags"] = check_totals(u)
+        u["site"] = next((key for key, prefix, _ in SITES if u["name"].startswith(prefix)), None)
+        if u["site"] is None:
+            raise SystemExit(f"Workbook tab {u['name']!r} matches no project in SITES "
+                             f"({', '.join(prefix for _, prefix, _ in SITES)}). "
+                             f"Add one, or list the tab in EXCLUDE.")
+    # T240 before T241, wherever the tabs sit in the workbook
+    units.sort(key=lambda u: [int(t) if t.isdigit() else t.lower()
+                              for t in re.split(r"(\d+)", u["name"])])
     return units
 
 
@@ -481,14 +503,40 @@ def render_compare(units):
 </section>"""
 
 
-def render(units):
+def page_file(key):
+    return next(f for slug, _, f in theme.PAGES if slug == key)
+
+
+def redirect(units, everyone):
+    """index.html used to be the activity log, so old links (…/#BL515) arrive
+    here. Send any hash this page does not know on to wherever it lives."""
+    if page_file(units[0]["site"]) != "index.html":
+        return ""
+    known = ",".join(f'"{u["slug"]}"' for u in units)
+    elsewhere = ",".join(f'"{u["slug"]}":"{page_file(u["site"])}"'
+                         for u in everyone if u["site"] != units[0]["site"])
+    return f"""<script>
+/* Links into the archived activity log used to land here (…/#BL515). Send them on. */
+(function(){{
+  var h = decodeURIComponent(location.hash.slice(1)).replace(/^u-/, '');
+  var elsewhere = {{{elsewhere}}};
+  if (h && [{known}].indexOf(h) < 0)
+    location.replace((elsewhere[h] || '{page_file("activity")}') + location.hash);
+}})();
+</script>"""
+
+
+def render(site, units, everyone):
+    key, prefix, heading = site
+    many = len(units) > 1
     all_acts = [a for u in units for a in u["activities"]]
     total = minutes_of(all_acts, SLOTS)
     caps = [u for u in units if any(a["slot"] == "cap" and a["state"] == "recorded"
                                     for a in u["activities"])]
     strip = "".join(f'<div><span class="k">{k}</span><span class="v mono">{v}</span>'
                     f'<span class="s">{s}</span></div>' for k, v, s in [
-        ("Units", str(len(units)), ", ".join(esc(u["name"]) for u in units)),
+        ("Units", str(len(units)),
+         ", ".join(esc(re.sub(rf"^{re.escape(prefix)}[\s-]*", "", u["name"])) for u in units)),
         ("Recorded time", fmt_dur(total), "person-time on site, all units"),
         ("MEP", fmt_dur(minutes_of(all_acts, {"mepg", "meps"})), "general and specialist"),
         ("QA", fmt_dur(minutes_of(all_acts, {"qa"})), "functional, sub-tasks included"),
@@ -499,12 +547,31 @@ def render(units):
     chips = "".join(
         f'<button class="chip" role="tab" aria-selected="false" data-f="{esc(u["slug"])}">'
         f'{esc(u["name"])}</button>' for u in units)
-    known = ",".join(f'"{u["slug"]}"' for u in units)
+    filters = f"""
+<div class="filters" role="tablist" aria-label="Filter by unit">
+  <span class="flabel">Unit</span>
+  <div class="chips">
+    <button class="chip" role="tab" aria-selected="true" data-f="all">All</button>
+    {chips}
+  </div>
+  <span class="showing" id="showing">Showing all {len(units)} units</span>
+  <button class="expand" type="button" id="expand" aria-pressed="false">Open all sub-tasks</button>
+</div>""" if many else """
+<div class="filters">
+  <button class="expand" type="button" id="expand" aria-pressed="false">Open all sub-tasks</button>
+</div>"""
+    # one unit: its card's tiles are the summary, and a one-bar chart says nothing
+    summary = f'<div class="strip">{strip}</div>\n\n{render_compare(units)}' if many else ""
+    skipped = sorted(t for t in EXCLUDE if t.startswith(prefix))
+    skipped = (f"""
+    <li>The workbook's {", ".join(f'<span class="mono">{esc(t)}</span>' for t in skipped)}
+      {"tab is an earlier take" if len(skipped) == 1 else "tabs are earlier takes"} and
+      {"is" if len(skipped) == 1 else "are"} not shown.</li>""" if skipped else "")
 
     masthead = theme.masthead(
-        "timemotion", "Pilot time and motion",
-        "How long each activity took on each pilot unit, timed on site. One colour per "
-        "person; open an activity for its sub-tasks.",
+        key, f"Pilot time and motion: {esc(heading)}",
+        f"How long each activity took on each {esc(heading)} pilot unit, timed on site. "
+        "One colour per person; open an activity for its sub-tasks.",
         f"Source <b>QA/QC time + motion</b><br>"
         f"Units <b>{len(units)}</b> &middot; Generated <b>{GENERATED:%d %b %Y}</b><br>"
         f"Times as recorded onsite")
@@ -515,15 +582,9 @@ def render(units):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>DAMAC snagging pilot &mdash; time and motion</title>
-<meta name="description" content="Time and motion for each unit in the DAMAC x CONXAI snagging pilot.">
-<script>
-/* Links into the activity log used to land here (…/#BL515). Send them on. */
-(function(){{
-  var h = decodeURIComponent(location.hash.slice(1)).replace(/^u-/, '');
-  if (h && [{known}].indexOf(h) < 0) location.replace('activity-logs.html' + location.hash);
-}})();
-</script>
+<title>DAMAC snagging pilot &mdash; time and motion, {esc(heading)}</title>
+<meta name="description" content="Time and motion for each {esc(heading)} unit in the DAMAC x CONXAI snagging pilot.">
+{redirect(units, everyone)}
 <style>
 {theme.CHROME_CSS}
 
@@ -669,19 +730,8 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
 
 {masthead}
 
-<div class="strip">{strip}</div>
-
-{render_compare(units)}
-
-<div class="filters" role="tablist" aria-label="Filter by unit">
-  <span class="flabel">Unit</span>
-  <div class="chips">
-    <button class="chip" role="tab" aria-selected="true" data-f="all">All</button>
-    {chips}
-  </div>
-  <span class="showing" id="showing">Showing all {len(units)} units</span>
-  <button class="expand" type="button" id="expand" aria-pressed="false">Open all sub-tasks</button>
-</div>
+{summary}
+{filters}
 
 {"".join(render_unit(u) for u in units)}
 
@@ -702,10 +752,9 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
       incorporated during QA and MEP snagging. The <b>static / spray test</b> is pending and is
       conducted at a later stage of snagging.</li>
     <li>A <span class="warn">!</span> marks minutes that do not agree with the clock times logged beside
-      them. Hover it for the arithmetic. Minutes are shown exactly as the sheet records them, and every
-      total is built from them &mdash; nothing has been corrected.</li>
-    <li>The workbook's <span class="mono">Gems-E511B_old</span> tab is an earlier take of Gems-E511B and
-      is not shown.</li>
+      them, or a sub-task logged outside its activity. Hover it for the detail. Differences of
+      {ROUNDING} minutes or less are rounding and are not marked. Minutes are shown exactly as the
+      sheet records them, and every total is built from them &mdash; nothing has been corrected.</li>{skipped}
   </ul>
 </div>
 
@@ -730,7 +779,7 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
     chips.forEach(function(c){{ c.setAttribute('aria-selected', String(c.dataset.f === f)); }});
     cards.forEach(function(c){{ c.hidden = !(f === 'all' || c.dataset.unit === f); }});
     rows.forEach(function(r){{ r.classList.toggle('dim', f !== 'all' && r.dataset.unit !== f); }});
-    out.textContent = f === 'all' ? 'Showing all ' + cards.length + ' units' : 'Showing ' + names[f] + ' only';
+    if (out) out.textContent = f === 'all' ? 'Showing all ' + cards.length + ' units' : 'Showing ' + names[f] + ' only';
     if (push) history.replaceState(null, '', f === 'all' ? location.pathname : '#' + f);
   }}
   function fromHash(){{
@@ -761,14 +810,19 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
 
 
 def main():
-    units = read_units()
-    OUT_PATH.write_text(render(units), encoding="utf-8")
-    flagged = sum(1 for u in units for a in u["activities"]
-                  for x in [a] + a["subs"] + ([a["other"]] if a["other"] else [])
-                  if x["flags"]) + sum(len(u["total_flags"]) for u in units)
-    print(f"wrote {OUT_PATH} ({OUT_PATH.stat().st_size:,} bytes) "
-          f"for {len(units)} units: {', '.join(u['name'] for u in units)}; "
-          f"flagged {flagged}")
+    everyone = read_units()
+    for site in SITES:
+        units = [u for u in everyone if u["site"] == site[0]]
+        if not units:
+            continue
+        out = ROOT / page_file(site[0])
+        out.write_text(render(site, units, everyone), encoding="utf-8")
+        flagged = sum(1 for u in units for a in u["activities"]
+                      for x in [a] + a["subs"] + ([a["other"]] if a["other"] else [])
+                      if x["flags"]) + sum(len(u["total_flags"]) for u in units)
+        print(f"wrote {out} ({out.stat().st_size:,} bytes) "
+              f"for {len(units)} unit{'s' if len(units) > 1 else ''}: "
+              f"{', '.join(u['name'] for u in units)}; flagged {flagged}")
 
 
 if __name__ == "__main__":

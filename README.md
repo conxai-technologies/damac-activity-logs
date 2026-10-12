@@ -1,32 +1,37 @@
 # DAMAC snagging pilot
 
-Three pages, one masthead, tabbed together. Each is a real file with its own
+Four pages, one masthead, tabbed together. Each is a real file with its own
 URL, so any of them can be linked to on its own.
 
 **https://conxai-technologies.github.io/damac-activity-logs/**
 
 | Tab | Page | Built from |
 | --- | --- | --- |
-| Pilot time and motion (default) | `index.html` | `data/qaqc-time-motion.xlsx` via `build_time_motion.py` |
-| Activity logs | `activity-logs.html` | `data/activity-logs.csv` via `build.py` |
+| Pilot time and motion Lagoons – Ibiza (default) | `index.html` | `data/qaqc-time-motion.xlsx` via `build_time_motion.py` |
+| Pilot time and motion Hills – Gems | `time-motion-gems.html` | the same workbook, same script |
 | Review Stats | `review-stats.html` | `data/review-stats.json` via `build_review.py` |
+| Archived activities | `activity-logs.html` | `data/activity-logs.csv` via `build.py` |
 
-Deep links: `…/#Ibiza-T241` on time and motion, `…/activity-logs.html#BL515` on
-the activity log, `…/review-stats.html` for the review stats. The activity log
-used to be the site root, so `index.html` forwards any hash it does not know
-(`…/#BL515`) to `activity-logs.html`.
+Deep links: `…/#Ibiza-T241` on Lagoons – Ibiza, `…/activity-logs.html#BL515` on
+archived activities, `…/review-stats.html` for the review stats. The archived
+activity log used to be the site root, so `index.html` forwards any hash it
+does not know (`…/#BL515`) to `activity-logs.html`.
 
 ## Pilot time and motion
 
 Minutes logged on site per activity, for each unit in the *QAQC Time + motion*
-workbook: Ibiza T241–T244 and Gems-E511B. Each unit is its own tab in the
-workbook; `Gems-E511B_old` is an earlier take of Gems-E511B and is skipped.
+workbook, one page per project: **Lagoons – Ibiza** (T240–T245) and
+**Hills – Gems** (E511B). Each unit is its own tab in the workbook, and lands on
+the page whose project its tab name starts with (`SITES` in
+`build_time_motion.py`). `Gems-E511B_old` is an earlier take of Gems-E511B and
+is skipped.
 
 Each fill colour in the workbook is a different person, and the page keeps one
 colour per person: MEP inspector (MEP general), MEP specialist (above ceiling),
 QA inspector (QA functional), and capture (iGUIDE or Matterport).
 
-- **Recorded time by unit** — each unit's minutes, split by person.
+- **Recorded time by unit** — each unit's minutes, split by person (on a page
+  with more than one unit).
 - **One card per unit** — every activity with its logged clock times, its
   minutes, and a timeline of the day. MEP general and QA functional open as a
   dropdown onto their sub-tasks (roof, yard; inside cupboard, tile tapping,
@@ -38,9 +43,10 @@ QA inspector (QA functional), and capture (iGUIDE or Matterport).
 
 A blank row is shown as **Activity pending**; 0 minutes or "not recorded
 seperately" as **Not recorded separately**. The workbook's minutes are used
-as-is, and where they disagree with the row's own clock times the page flags it.
+as-is, and where they disagree with the row's own clock times by more than
+2 minutes (`ROUNDING`) the page flags it; smaller differences are rounding.
 
-## Activity logs
+## Archived activities
 
 Time and effort logged for each unit, organised one card per unit.
 
@@ -84,7 +90,7 @@ ones the page shows.
 
 ## Rebuilding
 
-Every page is generated. `build.py` builds the activity log and then calls
+Every page is generated. `build.py` builds archived activities and then calls
 `build_review.py` and `build_time_motion.py`, so one command refreshes the
 site. Time and motion reads the workbook directly (cell fills included), which
 needs `openpyxl`:

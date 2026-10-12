@@ -536,7 +536,7 @@ def render(units, areas, block_order, blocks, resolve, unit_phases):
     ])
 
     masthead = theme.masthead(
-        "activity", "Activity log",
+        "activity", "Archived activities",
         "What each unit cost in time &mdash; manual QA and MEP snagging onsite, "
         "against photo capture and CONXAI processing. One card per unit.",
         f"Source <b>Damac snagging schedules &mdash; Activity logs</b><br>"
@@ -549,7 +549,7 @@ def render(units, areas, block_order, blocks, resolve, unit_phases):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>DAMAC snagging pilot &mdash; activity log</title>
+<title>DAMAC snagging pilot &mdash; archived activities</title>
 <meta name="description" content="Time and effort logged for each unit in the DAMAC x CONXAI snagging pilot.">
 <style>
 {theme.CHROME_CSS}
