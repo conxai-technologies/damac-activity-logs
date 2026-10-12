@@ -38,9 +38,10 @@ QA inspector (QA functional), and capture (iGUIDE or Matterport).
   roof) plus **Other functional**: the activity's minutes less its timed
   sub-tasks.
 - **Tests** on every unit: the flood test (30 min) was already conducted by
-  the contractor, with its results incorporated during QA and MEP snagging;
-  the static / spray test (20 min) is completed. Neither has start and end
-  times logged, and test minutes stay out of the unit totals (`TESTS`).
+  the contractor, with its results incorporated during QA and MEP snagging,
+  and stays out of the unit totals; the static test (20 min) is completed and
+  counts towards each unit's recorded time. Neither has start and end times
+  logged (`TESTS`).
 
 A blank MEP specialist row is shown as 30 minutes, marked *Start and end time
 not logged*, and counts towards the unit's MEP and recorded time (`UNTIMED`);
