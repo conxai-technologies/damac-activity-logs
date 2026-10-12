@@ -1,8 +1,8 @@
 """Chrome shared by every page of the site: tokens, masthead, tabs, footer.
 
-Both build.py (Activity logs) and build_review.py (Review Stats) render their
-own body from their own data, but the frame around it lives here so the two
-pages cannot drift apart.
+build_time_motion.py (Pilot time and motion), build.py (Activity logs) and
+build_review.py (Review Stats) each render their own body from their own data,
+but the frame around it lives here so the pages cannot drift apart.
 """
 
 import html
@@ -12,7 +12,8 @@ GENERATED = date.today()
 
 # The pages of the site, in tab order: (slug, label, file).
 PAGES = [
-    ("activity", "Activity logs", "index.html"),
+    ("timemotion", "Pilot time and motion", "index.html"),
+    ("activity", "Activity logs", "activity-logs.html"),
     ("review", "Review Stats", "review-stats.html"),
 ]
 

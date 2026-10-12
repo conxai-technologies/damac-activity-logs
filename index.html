@@ -4,8 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>DAMAC snagging pilot &mdash; activity log</title>
-<meta name="description" content="Time and effort logged for each unit in the DAMAC x CONXAI snagging pilot.">
+<title>DAMAC snagging pilot &mdash; time and motion</title>
+<meta name="description" content="Time and motion for each unit in the DAMAC x CONXAI snagging pilot.">
+<script>
+/* Links into the activity log used to land here (…/#BL515). Send them on. */
+(function(){
+  var h = decodeURIComponent(location.hash.slice(1)).replace(/^u-/, '');
+  if (h && ["Ibiza-T241","Ibiza-T242","Ibiza-T243","Ibiza-T244","Gems-E511B"].indexOf(h) < 0) location.replace('activity-logs.html' + location.hash);
+})();
+</script>
 <style>
 
 :root{
@@ -94,9 +101,30 @@ h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
   body{background:#fff} .tabs{display:none} .card{break-inside:avoid}
 }
 
-/* ---------------------------------------------- the activity log page --- */
-.tile .k{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
-  color:var(--muted);font-weight:650;line-height:1.35;min-height:2.7em}
+/* ------------------------------------------ the time and motion page --- */
+:root{
+  /* one per person, the sheet's hues; validated as a categorical set */
+  --p-mepg:#cf7b26; --p-meps:#065da0; --p-qa:#a672cb; --p-cap:#1e7546;
+}
+.p-mepg{--pc:var(--p-mepg)} .p-meps{--pc:var(--p-meps)}
+.p-qa{--pc:var(--p-qa)} .p-cap{--pc:var(--p-cap)}
+.sw{display:block;width:10px;height:10px;border-radius:3px;background:var(--pc);flex:none}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12.4px;color:var(--ink2);margin-bottom:16px}
+.legend>span{display:flex;align-items:center;gap:7px}
+.legend .lg-who{color:var(--muted)}
+.legend b{color:var(--ink);font-weight:650}
+.cmp{display:flex;flex-direction:column;gap:8px}
+.cmp-row{display:grid;grid-template-columns:104px 1fr;gap:14px;align-items:center;transition:opacity .15s}
+.cmp-row.dim{opacity:.35}
+.cmp-u{font-size:12.8px;font-weight:650;color:var(--ink);text-decoration:none}
+.cmp-u:hover{text-decoration:underline}
+.cmp-track{display:flex;align-items:center;gap:10px;min-width:0}
+.cmp-bar{display:flex;gap:2px;height:22px;flex:none;width:calc((100% - 250px) * var(--f))}
+.cmp-bar i{display:block;background:var(--pc);min-width:2px}
+.cmp-bar i:last-child{border-radius:0 4px 4px 0}
+.cmp-lab{font-size:12.8px;font-weight:700;white-space:nowrap}
+.cmp-note{font-size:11.6px;color:var(--muted);line-height:1.35;min-width:0;flex:1 1 0}
 
 .filters{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:20px;
   position:sticky;top:0;z-index:5;background:var(--page);padding:10px 0 11px}
@@ -104,90 +132,106 @@ h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
 .flabel{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:650}
 .chips{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:8px;
   overflow:hidden;background:var(--surface)}
-.chip{font:inherit;font-size:12.5px;padding:8px 13px;border:none;background:none;cursor:pointer;
-  color:var(--ink2);border-right:1px solid var(--line)}
+.chip,.expand{font:inherit;font-size:12.5px;padding:8px 13px;border:none;background:none;cursor:pointer;
+  color:var(--ink2)}
+.chip{border-right:1px solid var(--line)}
 .chip:last-child{border-right:none}
-.chip:hover{background:var(--panel);color:var(--ink)}
+.chip:hover,.expand:hover{background:var(--panel);color:var(--ink)}
 .chip[aria-selected="true"]{background:var(--ink);color:#fff;font-weight:600}
-.chip:focus-visible{outline:2px solid #1b6fc4;outline-offset:-2px}
-.showing{font-size:12.5px;color:var(--muted);margin-left:auto}
+.chip:focus-visible,.expand:focus-visible{outline:2px solid #1b6fc4;outline-offset:-2px}
+.expand{margin-left:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.showing{font-size:12.5px;color:var(--muted)}
 
 .uhead{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
-  padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:16px}
-.uname h3{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em;display:inline-block;vertical-align:baseline}
-.uarea{display:inline-block;margin-left:10px;vertical-align:3px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--panel);border:1px solid var(--line2);border-radius:999px;padding:2px 9px;white-space:nowrap}
+  padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.uname h3{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em}
 .usub{color:var(--ink2);font-size:12.8px;margin:5px 0 0}
 .usub b{color:var(--ink);font-weight:600}
-.tiles{display:grid;grid-template-columns:repeat(3,minmax(124px,1fr));gap:9px;flex:0 1 470px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:9px;flex:0 1 600px}
 .tile{background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:10px 12px}
+.tile .k{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);font-weight:650;line-height:1.35}
 .tile .v{display:block;font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:3px}
 .tile .s{display:block;font-size:11.2px;color:var(--ink2);margin-top:3px;line-height:1.45}
 
-.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:12px}
-.phase{border:1px solid var(--line2);border-radius:10px;padding:0 13px 12px;
-  border-top:3px solid var(--line);background:var(--surface)}
-.ph-qa{border-top-color:var(--c-qa)} .ph-mep{border-top-color:var(--c-mep)}
-.ph-cap{border-top-color:var(--c-cap)} .ph-proc{border-top-color:var(--c-proc)}
-.phase.is-empty{background:var(--panel);border-top-color:var(--line)}
-.phase header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
-  padding:12px 0 9px;border-bottom:1px solid var(--line2);margin-bottom:9px}
-.phase h4{font-size:12.5px;margin:0;font-weight:670;letter-spacing:-.005em}
-.pill{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-  padding:2px 7px;border-radius:5px;flex:none}
-.pf-onsite{background:#eef1f4;color:#41525f;border:1px solid #dbe2e8}
-.pf-conxai{background:#14171a;color:#fff}
-.phase dl{margin:0;display:flex;flex-direction:column}
-.phase dl>div{display:flex;gap:10px;align-items:baseline;justify-content:space-between;
-  padding:5px 0;border-top:1px solid #f2f3f2}
-.phase dl>div:first-child{border-top:none}
-.phase dt{font-size:11.8px;color:var(--muted);flex:none}
-.phase dd{margin:0;font-size:12.6px;text-align:right;color:var(--ink2)}
-.phase dd.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}
-.phase dd.strong{font-weight:700}
-.unit-word{color:var(--muted);font-size:11.5px}
-.phase .none{margin:2px 0 4px;font-size:12.6px;color:var(--muted)}
-.phase .none .sub{display:block;font-size:11.5px;margin-top:4px}
+/* activity rows: name | logged | time | timeline */
+.row{display:grid;grid-template-columns:minmax(210px,1.3fr) 96px 158px minmax(220px,2.3fr);
+  gap:0 16px;align-items:stretch}
+.row>div{display:flex;align-items:center;min-width:0}
+.row>div:not(.c-trk){padding:9px 0}
+.act{border-top:1px solid var(--line2)}
+.row.head{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:650}
+.row.head>div:not(.c-trk){padding:12px 0 6px}
+.c-name{gap:8px}
+.nm{display:flex;flex-direction:column;font-size:13px;line-height:1.35}
+.nm b{font-weight:650}
+.who,.hint{font-size:11.5px;color:var(--muted)}
+.c-log{font-size:12px;color:var(--ink2);line-height:1.5}
+.c-time{justify-content:flex-end;text-align:right;gap:0}
+.mins{font-size:13px;font-weight:650}
+.chev{width:16px;height:16px;flex:none;color:var(--muted);transition:transform .15s}
+.chev-sp{width:16px;flex:none}
+details[open]>summary .chev{transform:rotate(90deg)}
+summary.row{cursor:pointer;list-style:none}
+summary.row::-webkit-details-marker{display:none}
+summary.row:hover{background:var(--panel)}
+summary.row:hover .chev{color:var(--ink)}
+summary.row:focus-visible{outline:2px solid #1b6fc4;outline-offset:-2px}
+.subs{background:var(--panel);border-top:1px solid var(--line2)}
+.row.sub>.c-name{padding-left:24px;position:relative}
+.row.sub>.c-name::before{content:"";position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--pc);opacity:.45}
+.row.sub .nm{font-size:12.6px}
+.row.sub+.row.sub{border-top:1px solid var(--line2)}
+.row.other .nm{font-weight:600}
 
-.cal-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink2);margin-bottom:12px}
-.cal-legend span{display:flex;align-items:center;gap:6px}
-.cal-legend i,.cal-c i{display:block;border-radius:2px}
-.cal-legend i{width:11px;height:11px}
-.c-qa{background:var(--c-qa)} .c-mep{background:var(--c-mep)}
-.c-cap{background:var(--c-cap)} .c-proc{background:var(--c-proc)}
-.cal-scroll{overflow-x:auto}
-.cal{min-width:520px}
-.cal-row{display:flex;align-items:stretch;gap:10px}
-.cal-u{flex:0 0 76px;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none;
-  display:flex;align-items:center}
-.cal-u:hover{text-decoration:underline}
-.cal-cells{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(28px,1fr);gap:3px;flex:1}
-.cal-head .cal-d{text-align:center;padding-bottom:6px}
-.cal-d .dow{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.cal-d .dnum{display:block;font-family:ui-monospace,monospace;font-size:12px;color:var(--ink2);font-weight:600}
-.cal-d.wknd .dnum,.cal-d.wknd .dow{color:#b3b9be}
-.cal-c{height:26px;border-radius:5px;background:var(--panel);border:1px solid var(--line2);
-  display:flex;gap:2px;align-items:stretch;padding:3px;margin-bottom:5px}
-.cal-c.wknd{background:#f0f1ef}
-.cal-c i{flex:1;min-width:4px}
-.cal-row[hidden]{display:none}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:2px 9px;
+  border-radius:999px;white-space:nowrap;line-height:1.55}
+.st-pending{background:var(--surface);color:var(--ink2);border:1px solid var(--line)}
+.st-pending::before{content:"";width:6px;height:6px;border-radius:50%;border:1.5px solid var(--muted)}
+.st-separate{background:var(--line2);color:var(--ink2)}
+.st-done{background:var(--ink);color:#fff}
+.st-done::before{content:"\2713";font-size:10px}
 
-.mxwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
-table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
-.mx th,.mx td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
-.mx thead th{position:sticky;top:0;background:var(--panel);font-size:11px;letter-spacing:.05em;
-  text-transform:uppercase;color:var(--ink2);font-weight:700;border-bottom:1px solid var(--line);z-index:2}
-.mx tbody th{font-weight:500;color:var(--ink2);position:sticky;left:0;background:var(--surface);z-index:1}
-.mx .corner{position:sticky;left:0;background:var(--panel);z-index:3}
-.mx thead th .mx-area{display:block;margin-top:2px;font-size:10px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--muted)}
-.mx tr.grp th{background:var(--panel);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
-  font-weight:700;color:var(--ink);position:sticky;left:0}
-.mx td.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.mx td.na{color:var(--muted)}
-.mx tbody tr:hover td{background:#fafbfa}
+.c-trk{position:relative}
+.trk{position:relative;width:100%;min-height:40px;height:100%}
+.tk{position:absolute;top:0;bottom:0;width:1px;background:var(--line2)}
+.bar,.wash{position:absolute;top:50%;height:12px;margin-top:-6px;border-radius:3px;background:var(--pc);min-width:3px}
+.wash{opacity:.18}
+.row.sub .bar{height:10px;margin-top:-5px}
+.trk-note{position:absolute;left:10px;right:0;top:50%;transform:translateY(-50%);font-size:11.8px;
+  color:var(--ink2);line-height:1.4}
+.axis{position:relative;width:100%;height:100%;min-height:30px}
+.axis span{position:absolute;bottom:6px;transform:translateX(-50%);font-family:ui-monospace,monospace;
+  font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:500;color:var(--muted)}
+.axis span.first{transform:none}
+.axis span.last{transform:translateX(-100%)}
+.tests-head{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:650;padding:16px 0 6px;border-top:1px solid var(--line)}
+.act.test .row>div:not(.c-trk){padding:8px 0}
+.act.test .trk{min-height:36px}
+.sw-test{background:none;border:1.5px solid var(--muted)}
+.act.test .tk{display:none}
 
+@media (max-width:860px){
+  .row{grid-template-columns:1fr auto;grid-template-areas:"name time" "log log" "trk trk";gap:0 12px}
+  .c-name{grid-area:name} .c-time{grid-area:time} .c-log{grid-area:log} .c-trk{grid-area:trk}
+  .row>div.c-log{padding:0 0 4px 24px}
+  .row.sub>div.c-log{padding-left:24px}
+  .row.head .c-log{display:none}
+  .trk{min-height:26px}
+  .trk-note{position:static;transform:none;display:block;padding:0 0 10px 24px}
+  .act.test .trk{min-height:0}
+  .axis span:nth-child(even){display:none}
+}
 @media (max-width:720px){
-  .tiles{grid-template-columns:repeat(3,minmax(96px,1fr));flex:1 1 100%}
+  .tiles{grid-template-columns:repeat(2,minmax(110px,1fr));flex:1 1 100%}
   .filters{position:static}
+  .expand{margin-left:0}
+  .cmp-row{grid-template-columns:1fr;gap:4px}
+  .cmp-track{flex-wrap:wrap;gap:4px 10px}
+  /* the bar takes its own line; total and note sit underneath */
+  .cmp-bar{height:18px;width:calc(100% * var(--f));margin-right:calc(100% * (1 - var(--f)))}
 }
 @media print{
   .filters{display:none}
@@ -207,144 +251,197 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
   <div class="top-inner">
     <div>
       <p class="eyebrow">DAMAC &times; CONXAI snagging pilot</p>
-      <h1>Activity log</h1>
-      <p class="subline">What each unit cost in time &mdash; manual QA and MEP snagging onsite, against photo capture and CONXAI processing. One card per unit.</p>
+      <h1>Pilot time and motion</h1>
+      <p class="subline">How long each activity took on each pilot unit, timed on site. One colour per person; open an activity for its sub-tasks.</p>
     </div>
-    <div class="provenance">Source <b>Damac snagging schedules &mdash; Activity logs</b><br>Units <b>7</b> &middot; Generated <b>18 Sep 2026</b><br>Times as recorded onsite (GST)</div>
+    <div class="provenance">Source <b>QA/QC time + motion</b><br>Units <b>5</b> &middot; Generated <b>12 Oct 2026</b><br>Times as recorded onsite</div>
   </div>
-  <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html" aria-current="page">Activity logs</a><a class="tab" href="review-stats.html">Review Stats</a></nav>
+  <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html" aria-current="page">Pilot time and motion</a><a class="tab" href="activity-logs.html">Activity logs</a><a class="tab" href="review-stats.html">Review Stats</a></nav>
 </header>
 
-<div class="strip"><div><span class="k">Units</span><span class="v mono">7</span><span class="s">in the pilot</span></div><div><span class="k">Window</span><span class="v mono"><span class="sm">12 Aug &ndash; 22 Aug 2026</span></span><span class="s">first to last logged activity</span></div><div><span class="k">Manual manhours</span><span class="v mono">41h 16m</span><span class="s">QA and MEP snagging, all units</span></div><div><span class="k">Capture manhours</span><span class="v mono">22h 30m</span><span class="s">onsite photo capture</span></div><div><span class="k">Processing time</span><span class="v mono">18h 15m</span><span class="s">elapsed, not manned</span></div></div>
+<div class="strip"><div><span class="k">Units</span><span class="v mono">5</span><span class="s">Ibiza T241, Ibiza T242, Ibiza T243, Ibiza T244, Gems-E511B</span></div><div><span class="k">Recorded time</span><span class="v mono">19h 48m</span><span class="s">person-time on site, all units</span></div><div><span class="k">MEP</span><span class="v mono">7h 03m</span><span class="s">general and specialist</span></div><div><span class="k">QA</span><span class="v mono">8h 36m</span><span class="s">functional, sub-tasks included</span></div><div><span class="k">Capture</span><span class="v mono">4h 09m</span><span class="s">3 of 5 units captured</span></div></div>
+
+
+<section class="card" aria-labelledby="cmp-h">
+  <div class="card-head">
+    <h2 id="cmp-h">Recorded time by unit</h2>
+    <p class="card-sub">Minutes logged on site, split by the person who logged them. Bar length is
+    comparable across units. Unit names jump to the breakdown below.</p>
+  </div>
+  <div class="legend"><span class="p-mepg"><i class="sw"></i>MEP general <span class="lg-who">MEP inspector</span> <b class="mono">6h 27m</b></span><span class="p-meps"><i class="sw"></i>MEP specialist (above ceiling) <b class="mono">36m</b></span><span class="p-qa"><i class="sw"></i>QA functional <span class="lg-who">QA inspector</span> <b class="mono">8h 36m</b></span><span class="p-cap"><i class="sw"></i>Capture <span class="lg-who">Capture operator</span> <b class="mono">4h 09m</b></span></div>
+  <div class="cmp">
+    <div class="cmp-row" data-unit="Ibiza-T241">
+      <a class="cmp-u" href="#u-Ibiza-T241">Ibiza T241</a>
+      <div class="cmp-track">
+        <div class="cmp-bar" style="--f:0.2538"><i class="p-mepg" style="flex:41" title="Ibiza T241 · MEP general (MEP inspector) · 41m"></i><i class="p-meps" style="flex:20" title="Ibiza T241 · MEP specialist (above ceiling) (MEP specialist) · 20m"></i><i class="p-qa" style="flex:69" title="Ibiza T241 · QA functional (QA inspector) · 1h 09m"></i><i class="p-cap" style="flex:38" title="Ibiza T241 · Capture (Capture operator) · 38m"></i></div>
+        <span class="cmp-lab mono">2h 48m</span>
+      </div>
+    </div>
+    <div class="cmp-row" data-unit="Ibiza-T242">
+      <a class="cmp-u" href="#u-Ibiza-T242">Ibiza T242</a>
+      <div class="cmp-track">
+        <div class="cmp-bar" style="--f:0.2598"><i class="p-mepg" style="flex:45" title="Ibiza T242 · MEP general (MEP inspector) · 45m"></i><i class="p-meps" style="flex:16" title="Ibiza T242 · MEP specialist (above ceiling) (MEP specialist) · 16m"></i><i class="p-qa" style="flex:74" title="Ibiza T242 · QA functional (QA inspector) · 1h 14m"></i><i class="p-cap" style="flex:37" title="Ibiza T242 · Capture (Capture operator) · 37m"></i></div>
+        <span class="cmp-lab mono">2h 52m</span>
+      </div>
+    </div>
+    <div class="cmp-row" data-unit="Ibiza-T243">
+      <a class="cmp-u" href="#u-Ibiza-T243">Ibiza T243</a>
+      <div class="cmp-track">
+        <div class="cmp-bar" style="--f:0.1390"><i class="p-mepg" style="flex:43" title="Ibiza T243 · MEP general (MEP inspector) · 43m"></i><i class="p-qa" style="flex:49" title="Ibiza T243 · QA functional (QA inspector) · 49m"></i></div>
+        <span class="cmp-lab mono">1h 32m</span><span class="cmp-note">MEP specialist and capture pending</span>
+      </div>
+    </div>
+    <div class="cmp-row" data-unit="Ibiza-T244">
+      <a class="cmp-u" href="#u-Ibiza-T244">Ibiza T244</a>
+      <div class="cmp-track">
+        <div class="cmp-bar" style="--f:0.1420"><i class="p-mepg" style="flex:45" title="Ibiza T244 · MEP general (MEP inspector) · 45m"></i><i class="p-qa" style="flex:49" title="Ibiza T244 · QA functional (QA inspector) · 49m"></i></div>
+        <span class="cmp-lab mono">1h 34m</span><span class="cmp-note">MEP specialist and capture pending</span>
+      </div>
+    </div>
+    <div class="cmp-row" data-unit="Gems-E511B">
+      <a class="cmp-u" href="#u-Gems-E511B">Gems-E511B</a>
+      <div class="cmp-track">
+        <div class="cmp-bar" style="--f:1.0000"><i class="p-mepg" style="flex:213" title="Gems-E511B · MEP general (MEP inspector) · 3h 33m"></i><i class="p-qa" style="flex:275" title="Gems-E511B · QA functional (QA inspector) · 4h 35m"></i><i class="p-cap" style="flex:174" title="Gems-E511B · Capture (Capture operator) · 2h 54m"></i></div>
+        <span class="cmp-lab mono">11h 02m</span><span class="cmp-note">MEP specialist not recorded separately</span>
+      </div>
+    </div></div>
+</section>
 
 <div class="filters" role="tablist" aria-label="Filter by unit">
   <span class="flabel">Unit</span>
   <div class="chips">
     <button class="chip" role="tab" aria-selected="true" data-f="all">All</button>
-    <button class="chip mono" role="tab" aria-selected="false" data-f="Q845">Q845</button><button class="chip mono" role="tab" aria-selected="false" data-f="Q844">Q844</button><button class="chip mono" role="tab" aria-selected="false" data-f="Q545">Q545</button><button class="chip mono" role="tab" aria-selected="false" data-f="BL109">BL109</button><button class="chip mono" role="tab" aria-selected="false" data-f="BL515">BL515</button><button class="chip mono" role="tab" aria-selected="false" data-f="C625F">C625F</button><button class="chip mono" role="tab" aria-selected="false" data-f="K148">K148</button>
+    <button class="chip" role="tab" aria-selected="false" data-f="Ibiza-T241">Ibiza T241</button><button class="chip" role="tab" aria-selected="false" data-f="Ibiza-T242">Ibiza T242</button><button class="chip" role="tab" aria-selected="false" data-f="Ibiza-T243">Ibiza T243</button><button class="chip" role="tab" aria-selected="false" data-f="Ibiza-T244">Ibiza T244</button><button class="chip" role="tab" aria-selected="false" data-f="Gems-E511B">Gems-E511B</button>
   </div>
-  <span class="showing" id="showing">Showing all 7 units</span>
+  <span class="showing" id="showing">Showing all 5 units</span>
+  <button class="expand" type="button" id="expand" aria-pressed="false">Open all sub-tasks</button>
 </div>
 
 
-<section class="card cal-card" aria-labelledby="cal-h">
-  <div class="card-head">
-    <h2 id="cal-h">Programme at a glance</h2>
-    <p class="card-sub">Every day each unit was worked on, August 2026.</p>
-  </div>
-  <div class="cal-legend"><span><i class="c-qa"></i>Manual QA</span><span><i class="c-mep"></i>Manual MEP</span><span><i class="c-cap"></i>Capture</span><span><i class="c-proc"></i>Processing</span></div>
-  <div class="cal-scroll">
-    <div class="cal">
-      <div class="cal-row cal-head"><div class="cal-u"></div><div class="cal-cells"><div class="cal-d"><span class="dow">W</span><span class="dnum">12</span></div><div class="cal-d"><span class="dow">T</span><span class="dnum">13</span></div><div class="cal-d"><span class="dow">F</span><span class="dnum">14</span></div><div class="cal-d wknd"><span class="dow">S</span><span class="dnum">15</span></div><div class="cal-d wknd"><span class="dow">S</span><span class="dnum">16</span></div><div class="cal-d"><span class="dow">M</span><span class="dnum">17</span></div><div class="cal-d"><span class="dow">T</span><span class="dnum">18</span></div><div class="cal-d"><span class="dow">W</span><span class="dnum">19</span></div><div class="cal-d"><span class="dow">T</span><span class="dnum">20</span></div><div class="cal-d"><span class="dow">F</span><span class="dnum">21</span></div><div class="cal-d wknd"><span class="dow">S</span><span class="dnum">22</span></div></div></div>
-      <div class="cal-row" data-unit="Q845"><a class="cal-u mono" href="#u-Q845">Q845</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-mep" title="Q845 &mdash; Manual MEP snagging"></i><i class="c-cap" title="Q845 &mdash; Capture"></i><i class="c-proc" title="Q845 &mdash; Processing"></i></div><div class="cal-c wknd on"><i class="c-qa" title="Q845 &mdash; Manual QA snagging"></i></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="Q844"><a class="cal-u mono" href="#u-Q844">Q844</a><div class="cal-cells"><div class="cal-c on"><i class="c-qa" title="Q844 &mdash; Manual QA snagging"></i></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="Q844 &mdash; Capture"></i><i class="c-proc" title="Q844 &mdash; Processing"></i></div><div class="cal-c wknd on"><i class="c-mep" title="Q844 &mdash; Manual MEP snagging"></i></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="Q545"><a class="cal-u mono" href="#u-Q545">Q545</a><div class="cal-cells"><div class="cal-c on"><i class="c-mep" title="Q545 &mdash; Manual MEP snagging"></i></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="Q545 &mdash; Capture"></i><i class="c-proc" title="Q545 &mdash; Processing"></i></div><div class="cal-c wknd on"><i class="c-qa" title="Q545 &mdash; Manual QA snagging"></i></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="BL109"><a class="cal-u mono" href="#u-BL109">BL109</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="BL109 &mdash; Capture"></i><i class="c-proc" title="BL109 &mdash; Processing"></i></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-mep" title="BL109 &mdash; Manual MEP snagging"></i></div><div class="cal-c wknd on"><i class="c-qa" title="BL109 &mdash; Manual QA snagging"></i></div></div></div><div class="cal-row" data-unit="BL515"><a class="cal-u mono" href="#u-BL515">BL515</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c on"><i class="c-qa" title="BL515 &mdash; Manual QA snagging"></i></div><div class="cal-c on"><i class="c-cap" title="BL515 &mdash; Capture"></i><i class="c-proc" title="BL515 &mdash; Processing"></i></div><div class="cal-c"></div><div class="cal-c on"><i class="c-mep" title="BL515 &mdash; Manual MEP snagging"></i></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="C625F"><a class="cal-u mono" href="#u-C625F">C625F</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c on"><i class="c-cap" title="C625F &mdash; Capture"></i></div><div class="cal-c on"><i class="c-cap" title="C625F &mdash; Capture"></i><i class="c-proc" title="C625F &mdash; Processing"></i></div><div class="cal-c"></div><div class="cal-c wknd"></div></div></div><div class="cal-row" data-unit="K148"><a class="cal-u mono" href="#u-K148">K148</a><div class="cal-cells"><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd"></div><div class="cal-c wknd"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c"></div><div class="cal-c wknd on"><i class="c-qa" title="K148 &mdash; Manual QA snagging"></i></div></div></div>
-    </div>
-  </div>
-</section>
-
-
-<article class="card unit-card" id="u-Q845" data-unit="Q845">
+<article class="card unit-card" id="u-Ibiza-T241" data-unit="Ibiza-T241">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">Q845</h3><span class="uarea" title="Floor area">171.8 m&sup2;</span>
-      <p class="usub">QA <b>onsite</b> &middot; MEP on <b>CONXAI</b> &middot; captured 14 Aug</p>
+      <h3>Ibiza T241</h3>
+      <p class="usub">Capture on <b>iGUIDE</b> &middot; first to last logged activity <b>10:18&ndash;15:26</b></p>
     </div>
-    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 08m</span><span class="s">QA 4h 44m + MEP 1h 24m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
+    <div class="tiles"><div class="tile"><span class="k">Recorded time</span><span class="v mono">2h 48m</span><span class="s">4 people, all activities</span></div><div class="tile"><span class="k">MEP</span><span class="v mono">1h 01m</span><span class="s">MEP general 41m + MEP specialist 20m</span></div><div class="tile"><span class="k">QA</span><span class="v mono">1h 09m</span><span class="s">QA functional</span></div><div class="tile"><span class="k">Capture</span><span class="v mono">38m</span><span class="s">iGUIDE</span></div></div>
   </div>
-  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 15 Aug 2026 &middot; 09:55</dd></div><div><dt>End</dt><dd>Sat 15 Aug 2026 &middot; 12:17</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">2h 22m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">4h 44m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-conxai">CONXAI</span></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026 &middot; 14:37</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026 &middot; 16:01</dd></div><div><dt>Duration</dt><dd class="num">1h 24m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 24m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">1h 30m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
+  <div class="acts">
+    <div class="row head" aria-hidden="true">
+      <div class="c-name">Activity</div><div class="c-log">Logged</div>
+      <div class="c-time">Time</div>
+      <div class="c-trk"><div class="axis"><span style="left:0.000%" class="first">10:00</span><span style="left:16.667%">11:00</span><span style="left:33.333%">12:00</span><span style="left:50.000%">13:00</span><span style="left:66.667%">14:00</span><span style="left:83.333%">15:00</span><span style="left:100.000%" class="last">16:00</span></div></div>
+    </div>
+    <details class="act p-mepg"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>MEP general</b><span class="who">MEP inspector</span><span class="hint">2 sub-tasks + other functional</span></span></div><div class="c-log mono">11:51&ndash;12:04<br>14:51&ndash;15:19</div><div class="c-time"><span class="mins mono">41m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:30.833%;width:3.611%" title="Ibiza T241 · MEP general · 11:51–12:04"></span><span class="bar" style="left:80.833%;width:7.778%" title="Ibiza T241 · MEP general · 14:51–15:19"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">15:00&ndash;15:14</div><div class="c-time"><span class="mins mono">14m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:30.833%;width:3.611%"></span><span class="wash" style="left:80.833%;width:7.778%"></span><span class="bar" style="left:83.333%;width:3.889%" title="Ibiza T241 · Roof · 15:00–15:14"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Yard</span></div><div class="c-log mono">14:51&ndash;14:59</div><div class="c-time"><span class="mins mono">8m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:30.833%;width:3.611%"></span><span class="wash" style="left:80.833%;width:7.778%"></span><span class="bar" style="left:80.833%;width:2.222%" title="Ibiza T241 · Yard · 14:51–14:59"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">MEP general time not covered by the sub-tasks</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">19m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:30.833%;width:3.611%"></span><span class="wash" style="left:80.833%;width:7.778%"></span></div></div></div></div></details><div class="act p-meps"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>MEP specialist (above ceiling)</b><span class="who">MEP specialist</span></span></div><div class="c-log mono">15:06&ndash;15:26</div><div class="c-time"><span class="mins mono">20m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:85.000%;width:5.556%" title="Ibiza T241 · MEP specialist (above ceiling) · 15:06–15:26"></span></div></div></div></div><details class="act p-qa"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>QA functional</b><span class="who">QA inspector</span><span class="hint">3 sub-tasks + other functional</span></span></div><div class="c-log mono">10:55&ndash;12:04</div><div class="c-time"><span class="mins mono">1h 09m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:15.278%;width:19.167%" title="Ibiza T241 · QA functional · 10:55–12:04"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Inside cupboard</span></div><div class="c-log mono">11:22&ndash;11:48</div><div class="c-time"><span class="mins mono">26m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:15.278%;width:19.167%"></span><span class="bar" style="left:22.778%;width:7.222%" title="Ibiza T241 · Inside cupboard · 11:22–11:48"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Tile tapping</span></div><div class="c-log mono">11:48&ndash;12:04</div><div class="c-time"><span class="mins mono">16m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:15.278%;width:19.167%"></span><span class="bar" style="left:30.000%;width:4.444%" title="Ibiza T241 · Tile tapping · 11:48–12:04"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">11:12&ndash;11:20</div><div class="c-time"><span class="mins mono">8m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:15.278%;width:19.167%"></span><span class="bar" style="left:20.000%;width:2.222%" title="Ibiza T241 · Roof · 11:12–11:20"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">QA functional time not covered by the sub-tasks</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">19m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:15.278%;width:19.167%"></span></div></div></div></div></details><div class="act p-cap"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>Capture (iGUIDE)</b><span class="who">Capture operator</span></span></div><div class="c-log mono">10:18&ndash;10:56</div><div class="c-time"><span class="mins mono">38m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:5.000%;width:10.556%" title="Ibiza T241 · Capture (iGUIDE) · 10:18–10:56"></span></div></div></div></div>
+    <div class="tests-head">Tests</div>
+    <div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Flood test</b><span class="who">Contractor</span></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-done">Done by contractor</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Already conducted by the contractor. Results are incorporated during QA and MEP snagging.</span></div></div></div></div><div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Static / spray test</b></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-pending">Pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Conducted at a later stage of snagging.</span></div></div></div></div>
+  </div>
 </article>
-<article class="card unit-card" id="u-Q844" data-unit="Q844">
+<article class="card unit-card" id="u-Ibiza-T242" data-unit="Ibiza-T242">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">Q844</h3><span class="uarea" title="Floor area">172.8 m&sup2;</span>
-      <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 14 Aug</p>
+      <h3>Ibiza T242</h3>
+      <p class="usub">Capture on <b>iGUIDE</b> &middot; first to last logged activity <b>11:01&ndash;16:04</b></p>
     </div>
-    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 55m</span><span class="s">QA 5h 06m + MEP 1h 49m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
+    <div class="tiles"><div class="tile"><span class="k">Recorded time</span><span class="v mono">2h 52m</span><span class="s">4 people, all activities</span></div><div class="tile"><span class="k">MEP</span><span class="v mono">1h 01m</span><span class="s">MEP general 45m + MEP specialist 16m</span></div><div class="tile"><span class="k">QA</span><span class="v mono">1h 14m</span><span class="s">QA functional</span></div><div class="tile"><span class="k">Capture</span><span class="v mono">37m</span><span class="s">iGUIDE</span></div></div>
   </div>
-  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Wed 12 Aug 2026 &middot; 13:45</dd></div><div><dt>End</dt><dd>Wed 12 Aug 2026 &middot; 16:18</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">2h 33m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">5h 06m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 15 Aug 2026 &middot; 19:57</dd></div><div><dt>End</dt><dd>Sat 15 Aug 2026 &middot; 21:46</dd></div><div><dt>Duration</dt><dd class="num">1h 49m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 49m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">1h 30m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
+  <div class="acts">
+    <div class="row head" aria-hidden="true">
+      <div class="c-name">Activity</div><div class="c-log">Logged</div>
+      <div class="c-time">Time</div>
+      <div class="c-trk"><div class="axis"><span style="left:0.000%" class="first">11:00</span><span style="left:16.667%">12:00</span><span style="left:33.333%">13:00</span><span style="left:50.000%">14:00</span><span style="left:66.667%">15:00</span><span style="left:83.333%">16:00</span><span style="left:100.000%" class="last">17:00</span></div></div>
+    </div>
+    <details class="act p-mepg"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>MEP general</b><span class="who">MEP inspector</span><span class="hint">2 sub-tasks + other functional</span></span></div><div class="c-log mono">15:19&ndash;16:04</div><div class="c-time"><span class="mins mono">45m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:71.944%;width:12.500%" title="Ibiza T242 · MEP general · 15:19–16:04"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">15:47&ndash;16:04</div><div class="c-time"><span class="mins mono">14m</span><span class="warn" tabindex="0" role="note" aria-label="15:47–16:04 is 17m; the sheet records 14m." data-tip="15:47–16:04 is 17m; the sheet records 14m.">!</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:71.944%;width:12.500%"></span><span class="bar" style="left:79.722%;width:4.722%" title="Ibiza T242 · Roof · 15:47–16:04"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Yard</span></div><div class="c-log mono">14:51&ndash;14:59</div><div class="c-time"><span class="mins mono">8m</span><span class="warn" tabindex="0" role="note" aria-label="Logged 14:51–14:59, outside MEP general&#x27;s 15:19–16:04. Ibiza T241 logs the same times for Yard." data-tip="Logged 14:51–14:59, outside MEP general&#x27;s 15:19–16:04. Ibiza T241 logs the same times for Yard.">!</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:71.944%;width:12.500%"></span><span class="bar" style="left:64.167%;width:2.222%" title="Ibiza T242 · Yard · 14:51–14:59"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">MEP general time not covered by the sub-tasks</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">23m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:71.944%;width:12.500%"></span></div></div></div></div></details><div class="act p-meps"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>MEP specialist (above ceiling)</b><span class="who">MEP specialist</span></span></div><div class="c-log mono">15:27&ndash;15:43</div><div class="c-time"><span class="mins mono">16m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:74.167%;width:4.444%" title="Ibiza T242 · MEP specialist (above ceiling) · 15:27–15:43"></span></div></div></div></div><details class="act p-qa"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>QA functional</b><span class="who">QA inspector</span><span class="hint">3 sub-tasks + other functional</span></span></div><div class="c-log mono">14:50&ndash;16:04</div><div class="c-time"><span class="mins mono">1h 14m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:63.889%;width:20.556%" title="Ibiza T242 · QA functional · 14:50–16:04"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Tile tapping</span></div><div class="c-log mono">15:30&ndash;15:47</div><div class="c-time"><span class="mins mono">17m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:63.889%;width:20.556%"></span><span class="bar" style="left:75.000%;width:4.722%" title="Ibiza T242 · Tile tapping · 15:30–15:47"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Inside cupboard</span></div><div class="c-log mono">14:50&ndash;15:13</div><div class="c-time"><span class="mins mono">23m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:63.889%;width:20.556%"></span><span class="bar" style="left:63.889%;width:6.389%" title="Ibiza T242 · Inside cupboard · 14:50–15:13"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">15:47&ndash;16:04</div><div class="c-time"><span class="mins mono">17m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:63.889%;width:20.556%"></span><span class="bar" style="left:79.722%;width:4.722%" title="Ibiza T242 · Roof · 15:47–16:04"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">QA functional time not covered by the sub-tasks</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">17m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:63.889%;width:20.556%"></span></div></div></div></div></details><div class="act p-cap"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>Capture (iGUIDE)</b><span class="who">Capture operator</span></span></div><div class="c-log mono">11:01&ndash;11:38</div><div class="c-time"><span class="mins mono">37m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:0.278%;width:10.278%" title="Ibiza T242 · Capture (iGUIDE) · 11:01–11:38"></span></div></div></div></div>
+    <div class="tests-head">Tests</div>
+    <div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Flood test</b><span class="who">Contractor</span></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-done">Done by contractor</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Already conducted by the contractor. Results are incorporated during QA and MEP snagging.</span></div></div></div></div><div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Static / spray test</b></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-pending">Pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:16.667%"></i><i class="tk" style="left:33.333%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:66.667%"></i><i class="tk" style="left:83.333%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Conducted at a later stage of snagging.</span></div></div></div></div>
+  </div>
 </article>
-<article class="card unit-card" id="u-Q545" data-unit="Q545">
+<article class="card unit-card" id="u-Ibiza-T243" data-unit="Ibiza-T243">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">Q545</h3><span class="uarea" title="Floor area">177.8 m&sup2;</span>
-      <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 14 Aug</p>
+      <h3>Ibiza T243</h3>
+      <p class="usub">Capture on <b>Matterport</b> &middot; pending &middot; first to last logged activity <b>09:30&ndash;10:40</b></p>
     </div>
-    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">6h 05m</span><span class="s">QA 5h 06m + MEP 59m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">1h 30m</span><span class="s">14 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">14 Aug</span></div></div>
+    <div class="tiles"><div class="tile"><span class="k">Recorded time</span><span class="v mono">1h 32m</span><span class="s">2 people, all activities</span></div><div class="tile"><span class="k">MEP</span><span class="v mono">43m</span><span class="s">MEP general 43m + MEP specialist activity pending</span></div><div class="tile"><span class="k">QA</span><span class="v mono">49m</span><span class="s">QA functional</span></div><div class="tile"><span class="k">Capture</span><span class="v mono">&mdash;</span><span class="s">Matterport activity pending</span></div></div>
   </div>
-  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 15 Aug 2026 &middot; 12:17</dd></div><div><dt>End</dt><dd>Sat 15 Aug 2026 &middot; 14:50</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">2h 33m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">5h 06m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Wed 12 Aug 2026 &middot; 16:34</dd></div><div><dt>End</dt><dd>Wed 12 Aug 2026 &middot; 17:33</dd></div><div><dt>Duration</dt><dd class="num">59m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">59m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">1h 30m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>End</dt><dd>Fri 14 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
+  <div class="acts">
+    <div class="row head" aria-hidden="true">
+      <div class="c-name">Activity</div><div class="c-log">Logged</div>
+      <div class="c-time">Time</div>
+      <div class="c-trk"><div class="axis"><span style="left:0.000%" class="first">09:00</span><span style="left:25.000%">09:30</span><span style="left:50.000%">10:00</span><span style="left:75.000%">10:30</span><span style="left:100.000%" class="last">11:00</span></div></div>
+    </div>
+    <details class="act p-mepg"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>MEP general</b><span class="who">MEP inspector</span><span class="hint">2 sub-tasks + other functional</span></span></div><div class="c-log mono">09:57&ndash;10:40</div><div class="c-time"><span class="mins mono">43m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:47.500%;width:35.833%" title="Ibiza T243 · MEP general · 09:57–10:40"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:47.500%;width:35.833%"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Yard</span></div><div class="c-log mono">10:27&ndash;10:40</div><div class="c-time"><span class="mins mono">13m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:47.500%;width:35.833%"></span><span class="bar" style="left:72.500%;width:10.833%" title="Ibiza T243 · Yard · 10:27–10:40"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">MEP general time not covered by the sub-tasks</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">30m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:47.500%;width:35.833%"></span></div></div></div></div></details><div class="act p-meps"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>MEP specialist (above ceiling)</b><span class="who">MEP specialist</span></span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i></div></div></div></div><details class="act p-qa"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>QA functional</b><span class="who">QA inspector</span><span class="hint">3 sub-tasks + other functional</span></span></div><div class="c-log mono">09:30&ndash;10:19</div><div class="c-time"><span class="mins mono">49m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:25.000%;width:40.833%" title="Ibiza T243 · QA functional · 09:30–10:19"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Tile tapping</span></div><div class="c-log mono">10:07&ndash;10:19</div><div class="c-time"><span class="mins mono">12m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:25.000%;width:40.833%"></span><span class="bar" style="left:55.833%;width:10.000%" title="Ibiza T243 · Tile tapping · 10:07–10:19"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Inside cupboard</span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-separate">Not recorded separately</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:25.000%;width:40.833%"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:25.000%;width:40.833%"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">QA functional time not covered by the sub-tasks</span><span class="who">Includes inside cupboard, not recorded separately</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">37m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:25.000%;width:40.833%"></span></div></div></div></div></details><div class="act p-cap"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>Capture (Matterport)</b><span class="who">Capture operator</span></span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i></div></div></div></div>
+    <div class="tests-head">Tests</div>
+    <div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Flood test</b><span class="who">Contractor</span></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-done">Done by contractor</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Already conducted by the contractor. Results are incorporated during QA and MEP snagging.</span></div></div></div></div><div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Static / spray test</b></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-pending">Pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Conducted at a later stage of snagging.</span></div></div></div></div>
+  </div>
 </article>
-<article class="card unit-card" id="u-BL109" data-unit="BL109">
+<article class="card unit-card" id="u-Ibiza-T244" data-unit="Ibiza-T244">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">BL109</h3><span class="uarea" title="Floor area">700.5 m&sup2;</span>
-      <p class="usub">QA <b>onsite</b> &middot; MEP <b>onsite</b> &middot; captured 18 Aug</p>
+      <h3>Ibiza T244</h3>
+      <p class="usub">Capture on <b>Matterport</b> &middot; pending &middot; first to last logged activity <b>10:45&ndash;11:34</b></p>
     </div>
-    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">8h 34m</span><span class="s">QA 6h 56m + MEP 1h 38m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">5h 00m</span><span class="s">18 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 25m</span><span class="s">18 Aug</span></div></div>
+    <div class="tiles"><div class="tile"><span class="k">Recorded time</span><span class="v mono">1h 34m</span><span class="s">2 people, all activities</span></div><div class="tile"><span class="k">MEP</span><span class="v mono">45m</span><span class="s">MEP general 45m + MEP specialist activity pending</span></div><div class="tile"><span class="k">QA</span><span class="v mono">49m</span><span class="s">QA functional</span></div><div class="tile"><span class="k">Capture</span><span class="v mono">&mdash;</span><span class="s">Matterport activity pending</span></div></div>
   </div>
-  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Sat 22 Aug 2026 &middot; 14:07</dd></div><div><dt>End</dt><dd>Sat 22 Aug 2026 &middot; 20:05</dd></div><div><dt>Break</dt><dd>2h 30m</dd></div><div><dt>Duration</dt><dd class="num">3h 28m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">6h 56m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Fri 21 Aug 2026 &middot; 18:53</dd></div><div><dt>End</dt><dd>Fri 21 Aug 2026 &middot; 20:31</dd></div><div><dt>Duration</dt><dd class="num">1h 38m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 38m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">5h 00m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 25m</dd></div></dl></section></div>
+  <div class="acts">
+    <div class="row head" aria-hidden="true">
+      <div class="c-name">Activity</div><div class="c-log">Logged</div>
+      <div class="c-time">Time</div>
+      <div class="c-trk"><div class="axis"><span style="left:0.000%" class="first">10:00</span><span style="left:25.000%">10:30</span><span style="left:50.000%">11:00</span><span style="left:75.000%">11:30</span><span style="left:100.000%" class="last">12:00</span></div></div>
+    </div>
+    <details class="act p-mepg"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>MEP general</b><span class="who">MEP inspector</span><span class="hint">2 sub-tasks + other functional</span></span></div><div class="c-log mono">10:51&ndash;11:34</div><div class="c-time"><span class="mins mono">45m</span><span class="warn" tabindex="0" role="note" aria-label="10:51–11:34 is 43m; the sheet records 45m." data-tip="10:51–11:34 is 43m; the sheet records 45m.">!</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:42.500%;width:35.833%" title="Ibiza T244 · MEP general · 10:51–11:34"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:42.500%;width:35.833%"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Yard</span></div><div class="c-log mono">11:24&ndash;11:34</div><div class="c-time"><span class="mins mono">10m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:42.500%;width:35.833%"></span><span class="bar" style="left:70.000%;width:8.333%" title="Ibiza T244 · Yard · 11:24–11:34"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">MEP general time not covered by the sub-tasks</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">35m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:42.500%;width:35.833%"></span></div></div></div></div></details><div class="act p-meps"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>MEP specialist (above ceiling)</b><span class="who">MEP specialist</span></span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i></div></div></div></div><details class="act p-qa"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>QA functional</b><span class="who">QA inspector</span><span class="hint">3 sub-tasks + other functional</span></span></div><div class="c-log mono">10:45&ndash;11:34</div><div class="c-time"><span class="mins mono">49m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:37.500%;width:40.833%" title="Ibiza T244 · QA functional · 10:45–11:34"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Tile tapping</span></div><div class="c-log mono">11:24&ndash;11:34</div><div class="c-time"><span class="mins mono">10m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:37.500%;width:40.833%"></span><span class="bar" style="left:70.000%;width:8.333%" title="Ibiza T244 · Tile tapping · 11:24–11:34"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Inside cupboard</span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-separate">Not recorded separately</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:37.500%;width:40.833%"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:37.500%;width:40.833%"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">QA functional time not covered by the sub-tasks</span><span class="who">Includes inside cupboard, not recorded separately</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">39m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:37.500%;width:40.833%"></span></div></div></div></div></details><div class="act p-cap"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>Capture (Matterport)</b><span class="who">Capture operator</span></span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-pending">Activity pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i></div></div></div></div>
+    <div class="tests-head">Tests</div>
+    <div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Flood test</b><span class="who">Contractor</span></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-done">Done by contractor</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Already conducted by the contractor. Results are incorporated during QA and MEP snagging.</span></div></div></div></div><div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Static / spray test</b></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-pending">Pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:25.000%"></i><i class="tk" style="left:50.000%"></i><i class="tk" style="left:75.000%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Conducted at a later stage of snagging.</span></div></div></div></div>
+  </div>
 </article>
-<article class="card unit-card" id="u-BL515" data-unit="BL515">
+<article class="card unit-card" id="u-Gems-E511B" data-unit="Gems-E511B">
   <div class="uhead">
     <div class="uname">
-      <h3 class="mono">BL515</h3><span class="uarea" title="Floor area">200.3 m&sup2;</span>
-      <p class="usub">QA <b>onsite</b> &middot; MEP on <b>CONXAI</b> &middot; captured 18 Aug</p>
+      <h3>Gems-E511B</h3>
+      <p class="usub">Capture on <b>Matterport</b> &middot; first to last logged activity <b>10:29&ndash;14:55</b></p>
     </div>
-    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">10h 06m</span><span class="s">QA 9h 06m + MEP 1h 00m</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">2h 00m</span><span class="s">18 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">2h 20m</span><span class="s">18 Aug</span></div></div>
+    <div class="tiles"><div class="tile"><span class="k">Recorded time</span><span class="v mono">11h 02m</span><span class="s">3 people, all activities</span></div><div class="tile"><span class="k">MEP</span><span class="v mono">3h 33m</span><span class="s">MEP general 3h 33m + MEP specialist not recorded separately</span></div><div class="tile"><span class="k">QA</span><span class="v mono">4h 35m</span><span class="s">QA functional</span></div><div class="tile"><span class="k">Capture</span><span class="v mono">2h 54m</span><span class="s">Matterport</span></div></div>
   </div>
-  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><dl><div><dt>Start</dt><dd>Mon 17 Aug 2026 &middot; 14:36</dd></div><div><dt>End</dt><dd>Mon 17 Aug 2026 &middot; 20:29</dd></div><div><dt>Break</dt><dd>1h 20m</dd></div><div><dt>Duration</dt><dd class="num">4h 33m</dd></div><div><dt>Inspectors</dt><dd>2 <span class="unit-word">inspectors</span></dd></div><div><dt>Manhours</dt><dd class="num strong">9h 06m</dd></div></dl></section><section class="phase ph-mep"><header><h4>Manual MEP snagging</h4><span class="pill pf-conxai">CONXAI</span></header><dl><div><dt>Start</dt><dd>Thu 20 Aug 2026 &middot; 13:25</dd></div><div><dt>End</dt><dd>Thu 20 Aug 2026 &middot; 14:25</dd></div><div><dt>Duration</dt><dd class="num">1h 00m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">1h 00m</dd></div></dl></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">2h 00m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>End</dt><dd>Tue 18 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">2h 20m</dd></div></dl></section></div>
-</article>
-<article class="card unit-card" id="u-C625F" data-unit="C625F">
-  <div class="uhead">
-    <div class="uname">
-      <h3 class="mono">C625F</h3><span class="uarea" title="Floor area">1,870.1 m&sup2;</span>
-      <p class="usub">captured 19 Aug&ndash;20 Aug</p>
+  <div class="acts">
+    <div class="row head" aria-hidden="true">
+      <div class="c-name">Activity</div><div class="c-log">Logged</div>
+      <div class="c-time">Time</div>
+      <div class="c-trk"><div class="axis"><span style="left:0.000%" class="first">10:00</span><span style="left:20.000%">11:00</span><span style="left:40.000%">12:00</span><span style="left:60.000%">13:00</span><span style="left:80.000%">14:00</span><span style="left:100.000%" class="last">15:00</span></div></div>
     </div>
-    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">&mdash;</span><span class="s">No manual snagging recorded</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">11h 00m</span><span class="s">19 Aug &ndash; 20 Aug</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">6h 30m</span><span class="s">20 Aug</span></div></div>
+    <details class="act p-mepg"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>MEP general</b><span class="who">MEP inspector</span><span class="hint">2 sub-tasks + other functional</span></span></div><div class="c-log mono">11:11&ndash;14:43</div><div class="c-time"><span class="mins mono">3h 33m</span><span class="warn" tabindex="0" role="note" aria-label="11:11–14:43 is 3h 32m; the sheet records 3h 33m." data-tip="11:11–14:43 is 3h 32m; the sheet records 3h 33m.">!</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:23.667%;width:70.667%" title="Gems-E511B · MEP general · 11:11–14:43"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">14:30&ndash;14:43</div><div class="c-time"><span class="mins mono">13m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:23.667%;width:70.667%"></span><span class="bar" style="left:90.000%;width:4.333%" title="Gems-E511B · Roof · 14:30–14:43"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Yard</span></div><div class="c-log mono">13:14&ndash;14:22</div><div class="c-time"><span class="mins mono">1h 08m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:23.667%;width:70.667%"></span><span class="bar" style="left:64.667%;width:22.667%" title="Gems-E511B · Yard · 13:14–14:22"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">MEP general time not covered by the sub-tasks</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">2h 12m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:23.667%;width:70.667%"></span></div></div></div></div></details><div class="act p-meps"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>MEP specialist (above ceiling)</b><span class="who">MEP specialist</span></span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-separate">Not recorded separately</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i></div></div></div></div><details class="act p-qa"><summary class="row"><div class="c-name"><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="sw"></i><span class="nm"><b>QA functional</b><span class="who">QA inspector</span><span class="hint">3 sub-tasks + other functional</span></span></div><div class="c-log mono">10:29&ndash;14:54</div><div class="c-time"><span class="mins mono">4h 35m</span><span class="warn" tabindex="0" role="note" aria-label="10:29–14:54 is 4h 25m; the sheet records 4h 35m." data-tip="10:29–14:54 is 4h 25m; the sheet records 4h 35m.">!</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:9.667%;width:88.333%" title="Gems-E511B · QA functional · 10:29–14:54"></span></div></div></summary><div class="subs"><div class="row sub"><div class="c-name"><span class="nm">Inside cupboard</span></div><div class="c-log mono">&mdash;</div><div class="c-time"><span class="st st-separate">Not recorded separately</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:9.667%;width:88.333%"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Tile tapping</span></div><div class="c-log mono">14:22&ndash;14:54</div><div class="c-time"><span class="mins mono">22m</span><span class="warn" tabindex="0" role="note" aria-label="14:22–14:54 is 32m; the sheet records 22m." data-tip="14:22–14:54 is 32m; the sheet records 22m.">!</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:9.667%;width:88.333%"></span><span class="bar" style="left:87.333%;width:10.667%" title="Gems-E511B · Tile tapping · 14:22–14:54"></span></div></div></div><div class="row sub"><div class="c-name"><span class="nm">Roof</span></div><div class="c-log mono">13:18&ndash;13:52</div><div class="c-time"><span class="mins mono">34m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:9.667%;width:88.333%"></span><span class="bar" style="left:66.000%;width:11.333%" title="Gems-E511B · Roof · 13:18–13:52"></span></div></div></div><div class="row sub other"><div class="c-name"><span class="nm">Other functional<span class="who">QA functional time not covered by the sub-tasks</span><span class="who">Includes inside cupboard, not recorded separately</span></span></div><div class="c-log">Rest of session</div><div class="c-time"><span class="mins mono">3h 39m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="wash" style="left:9.667%;width:88.333%"></span></div></div></div></div></details><div class="act p-cap"><div class="row"><div class="c-name"><i class=chev-sp></i><i class="sw"></i><span class="nm"><b>Capture (Matterport)</b><span class="who">Capture operator</span></span></div><div class="c-log mono">12:01&ndash;14:55</div><div class="c-time"><span class="mins mono">2h 54m</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="bar" style="left:40.333%;width:58.000%" title="Gems-E511B · Capture (Matterport) · 12:01–14:55"></span></div></div></div></div>
+    <div class="tests-head">Tests</div>
+    <div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Flood test</b><span class="who">Contractor</span></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-done">Done by contractor</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Already conducted by the contractor. Results are incorporated during QA and MEP snagging.</span></div></div></div></div><div class="act test"><div class="row"><div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i><span class="nm"><b>Static / spray test</b></span></div><div class="c-log">&mdash;</div><div class="c-time"><span class="st st-pending">Pending</span></div><div class="c-trk"><div class="trk"><i class="tk" style="left:0.000%"></i><i class="tk" style="left:20.000%"></i><i class="tk" style="left:40.000%"></i><i class="tk" style="left:60.000%"></i><i class="tk" style="left:80.000%"></i><i class="tk" style="left:100.000%"></i><span class="trk-note">Conducted at a later stage of snagging.</span></div></div></div></div>
   </div>
-  <div class="phases"><section class="phase ph-qa is-empty"><header><h4>Manual QA snagging</h4><span class="pill pf-onsite">Onsite</span></header><p class="none">Not recorded<span class="sub">Planned platform: Onsite</span></p></section><section class="phase ph-mep is-empty"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><p class="none">Not recorded<span class="sub">Planned platform: Onsite</span></p></section><section class="phase ph-cap"><header><h4>Capture</h4></header><dl><div><dt>Start</dt><dd>Wed 19 Aug 2026</dd></div><div><dt>End</dt><dd>Thu 20 Aug 2026</dd></div><div><dt>Manhours</dt><dd class="num strong">11h 00m</dd></div></dl></section><section class="phase ph-proc"><header><h4>Processing</h4></header><dl><div><dt>Start</dt><dd>Thu 20 Aug 2026</dd></div><div><dt>End</dt><dd>Thu 20 Aug 2026</dd></div><div><dt>Processing time</dt><dd class="num strong">6h 30m</dd></div></dl></section></div>
 </article>
-<article class="card unit-card" id="u-K148" data-unit="K148">
-  <div class="uhead">
-    <div class="uname">
-      <h3 class="mono">K148</h3><span class="uarea" title="Floor area">176.1 m&sup2;</span>
-      <p class="usub">QA on <b>CONXAI</b> &middot; capture tbc</p>
-    </div>
-    <div class="tiles"><div class="tile"><span class="k">Manual manhours</span><span class="v mono">3h 28m</span><span class="s">QA 3h 28m + MEP not recorded</span></div><div class="tile"><span class="k">Capture manhours</span><span class="v mono">tbc</span><span class="s">Not yet captured</span></div><div class="tile"><span class="k">Processing time</span><span class="v mono">tbc</span><span class="s">Not yet processed</span></div></div>
-  </div>
-  <div class="phases"><section class="phase ph-qa"><header><h4>Manual QA snagging</h4><span class="pill pf-conxai">CONXAI</span></header><dl><div><dt>Start</dt><dd>Sat 22 Aug 2026 &middot; 10:03</dd></div><div><dt>End</dt><dd>Sat 22 Aug 2026 &middot; 13:31</dd></div><div><dt>Break</dt><dd>None</dd></div><div><dt>Duration</dt><dd class="num">3h 28m</dd></div><div><dt>Inspectors</dt><dd>1 <span class="unit-word">inspector</span></dd></div><div><dt>Manhours</dt><dd class="num strong">3h 28m</dd></div></dl></section><section class="phase ph-mep is-empty"><header><h4>Manual MEP snagging</h4><span class="pill pf-onsite">Onsite</span></header><p class="none">Not recorded<span class="sub">Planned platform: Onsite</span></p></section><section class="phase ph-cap is-empty"><header><h4>Capture</h4></header><p class="none">Scheduled, not yet run</p></section><section class="phase ph-proc is-empty"><header><h4>Processing</h4></header><p class="none">Scheduled, not yet run</p></section></div>
-</article>
-
-
-<section class="card" aria-labelledby="mx-h">
-  <div class="card-head">
-    <h2 id="mx-h">Full log, side by side</h2>
-    <p class="card-sub">The source sheet, normalised. Every row every unit was measured on.</p>
-  </div>
-  <div class="mxwrap">
-    <table class="mx">
-      <thead><tr><th scope="col" class="corner">Metric</th><th scope="col" class="mono">Q845<span class="mx-area">171.8 m&sup2;</span></th><th scope="col" class="mono">Q844<span class="mx-area">172.8 m&sup2;</span></th><th scope="col" class="mono">Q545<span class="mx-area">177.8 m&sup2;</span></th><th scope="col" class="mono">BL109<span class="mx-area">700.5 m&sup2;</span></th><th scope="col" class="mono">BL515<span class="mx-area">200.3 m&sup2;</span></th><th scope="col" class="mono">C625F<span class="mx-area">1,870.1 m&sup2;</span></th><th scope="col" class="mono">K148<span class="mx-area">176.1 m&sup2;</span></th></tr></thead>
-      <tbody><tr class="grp"><th scope="rowgroup" colspan="8">Manual Qa Snagging</th></tr><tr><th scope="row">Platform</th><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>CONXAI</td></tr><tr><th scope="row">Start - Manual QA</th><td class="num">15 Aug 09:55</td><td class="num">12 Aug 13:45</td><td class="num">15 Aug 12:17</td><td class="num">22 Aug 14:07</td><td class="num">17 Aug 14:36</td><td class="na">&mdash;</td><td class="num">22 Aug 10:03</td></tr><tr><th scope="row">Break</th><td class="num">None</td><td class="num">None</td><td class="num">None</td><td class="num">2h 30m</td><td class="num">1h 20m</td><td class="na">&mdash;</td><td class="num">None</td></tr><tr><th scope="row">End - Manual QA</th><td class="num">15 Aug 12:17</td><td class="num">12 Aug 16:18</td><td class="num">15 Aug 14:50</td><td class="num">22 Aug 20:05</td><td class="num">17 Aug 20:29</td><td class="na">&mdash;</td><td class="num">22 Aug 13:31</td></tr><tr><th scope="row">Duration - Manual QA</th><td class="num">2h 22m</td><td class="num">2h 33m</td><td class="num">2h 33m</td><td class="num">3h 28m</td><td class="num">4h 33m</td><td class="na">&mdash;</td><td class="num">3h 28m</td></tr><tr><th scope="row">Number of QA</th><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td class="na">&mdash;</td><td>1</td></tr><tr><th scope="row">Manhours</th><td class="num">4h 44m</td><td class="num">5h 06m</td><td class="num">5h 06m</td><td class="num">6h 56m</td><td class="num">9h 06m</td><td class="na">&mdash;</td><td class="num">3h 28m</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Manual Mep Snagging</th></tr><tr><th scope="row">Platform</th><td>CONXAI</td><td>Onsite</td><td>Onsite</td><td>Onsite</td><td>CONXAI</td><td>Onsite</td><td>Onsite</td></tr><tr><th scope="row">Start - MEP QA</th><td class="num">14 Aug 14:37</td><td class="num">15 Aug 19:57</td><td class="num">12 Aug 16:34</td><td class="num">21 Aug 18:53</td><td class="num">20 Aug 13:25</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">End - MEP QA</th><td class="num">14 Aug 16:01</td><td class="num">15 Aug 21:46</td><td class="num">12 Aug 17:33</td><td class="num">21 Aug 20:31</td><td class="num">20 Aug 14:25</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Duration - MEP QA</th><td class="num">1h 24m</td><td class="num">1h 49m</td><td class="num">59m</td><td class="num">1h 38m</td><td class="num">1h 00m</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Number of QA</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr><th scope="row">Manhours</th><td class="num">1h 24m</td><td class="num">1h 49m</td><td class="num">59m</td><td class="num">1h 38m</td><td class="num">1h 00m</td><td class="na">&mdash;</td><td class="na">&mdash;</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Capture</th></tr><tr><th scope="row">Start - Capture</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">19 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">End - Capture</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">Manhours</th><td class="num">1h 30m</td><td class="num">1h 30m</td><td class="num">1h 30m</td><td class="num">5h 00m</td><td class="num">2h 00m</td><td class="num">11h 00m</td><td class="na">tbc</td></tr><tr class="grp"><th scope="rowgroup" colspan="8">Processing</th></tr><tr><th scope="row">Start - Processing</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">End - Processing</th><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">14 Aug</td><td class="num">18 Aug</td><td class="num">18 Aug</td><td class="num">20 Aug</td><td class="na">tbc</td></tr><tr><th scope="row">Processing time</th><td class="num">2h 20m</td><td class="num">2h 20m</td><td class="num">2h 20m</td><td class="num">2h 25m</td><td class="num">2h 20m</td><td class="num">6h 30m</td><td class="na">tbc</td></tr></tbody>
-    </table>
-  </div>
-</section>
 
 <div class="notes">
-  <h2>Reading the log</h2>
+  <h2>Reading the page</h2>
   <ul>
-    <li><b>Duration</b> is start to end less any recorded break. <b>Manhours</b> is that duration
-      multiplied by the number of inspectors on site.</li>
-    <li><b>Processing time</b> is elapsed pipeline time, not manned effort, so it is kept out of
-      the manhours totals.</li>
-    <li>A <span class="warn">!</span> marks a figure that does not agree with
-      the times recorded beside it. Hover it for the arithmetic. Values are shown exactly as the
-      sheet records them &mdash; nothing has been corrected.</li>
-    <li>&mdash; means the sheet records N/A; <b>tbc</b> means the work is scheduled but not yet done.</li>
+    <li><b>Each colour is a different person</b>, as in the source sheet: the MEP inspector, the MEP
+      specialist, the QA inspector and whoever ran the capture. Times are the minutes each person
+      logged, so a unit's recorded time is person-time, not time on site.</li>
+    <li><b>MEP general</b> and <b>QA functional</b> are totals for the whole activity. Open one for its
+      sub-tasks; <b>Other functional</b> is the total less the sub-tasks that were timed, i.e. the
+      time they do not cover. Sub-tasks share the activity's colour, and the faint band behind them
+      is the activity's own session.</li>
+    <li><b>Not recorded separately</b> means the sheet logs 0 minutes or says so: the time is inside
+      the activity total, and so inside Other functional. <b>Activity pending</b> means the sheet's row
+      is blank.</li>
+    <li><b>Flood test</b> was already conducted by the contractor on every unit; its results are
+      incorporated during QA and MEP snagging. The <b>static / spray test</b> is pending and is
+      conducted at a later stage of snagging.</li>
+    <li>A <span class="warn">!</span> marks minutes that do not agree with the clock times logged beside
+      them. Hover it for the arithmetic. Minutes are shown exactly as the sheet records them, and every
+      total is built from them &mdash; nothing has been corrected.</li>
+    <li>The workbook's <span class="mono">Gems-E511B_old</span> tab is an earlier take of Gems-E511B and
+      is not shown.</li>
   </ul>
 </div>
 
 <p class="foot">
-  Generated from <span class="mono">data/activity-logs.csv</span> by
-  <span class="mono">build.py</span> &middot; 18 Sep 2026.
-  Re-run the script after updating the sheet to refresh this page.
+  Generated from <span class="mono">data/qaqc-time-motion.xlsx</span> by
+  <span class="mono">build_time_motion.py</span> &middot; 12 Oct 2026.
+  Re-run <span class="mono">build.py</span> after updating the workbook to refresh this page.
 </p>
 
 </div>
@@ -352,27 +449,39 @@ table.mx{width:100%;border-collapse:collapse;font-size:12.6px}
 (function(){
   var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
   var cards = Array.prototype.slice.call(document.querySelectorAll('.unit-card'));
-  var rows  = Array.prototype.slice.call(document.querySelectorAll('.cal-row[data-unit]'));
+  var rows  = Array.prototype.slice.call(document.querySelectorAll('.cmp-row'));
   var out   = document.getElementById('showing');
-  var total = cards.length;
+  var known = chips.map(function(c){ return c.dataset.f; });
+  var names = {};
+  chips.forEach(function(c){ names[c.dataset.f] = c.textContent; });
 
   function apply(f, push){
     chips.forEach(function(c){ c.setAttribute('aria-selected', String(c.dataset.f === f)); });
     cards.forEach(function(c){ c.hidden = !(f === 'all' || c.dataset.unit === f); });
-    rows.forEach(function(r){ r.hidden = !(f === 'all' || r.dataset.unit === f); });
-    out.textContent = f === 'all' ? 'Showing all ' + total + ' units' : 'Showing ' + f + ' only';
-    if (push) {
-      history.replaceState(null, '', f === 'all' ? location.pathname : '#' + f);
-    }
+    rows.forEach(function(r){ r.classList.toggle('dim', f !== 'all' && r.dataset.unit !== f); });
+    out.textContent = f === 'all' ? 'Showing all ' + cards.length + ' units' : 'Showing ' + names[f] + ' only';
+    if (push) history.replaceState(null, '', f === 'all' ? location.pathname : '#' + f);
+  }
+  function fromHash(){
+    var h = decodeURIComponent(location.hash.replace(/^#(u-)?/, ''));
+    return known.indexOf(h) > -1 ? h : 'all';
   }
 
   chips.forEach(function(c){
     c.addEventListener('click', function(){ apply(c.dataset.f, true); });
   });
+  window.addEventListener('hashchange', function(){ apply(fromHash(), false); });
+  apply(fromHash(), false);
 
-  var known = chips.map(function(c){ return c.dataset.f; });
-  var hash = decodeURIComponent(location.hash.replace(/^#(u-)?/, ''));
-  apply(known.indexOf(hash) > -1 ? hash : 'all', false);
+  var all = Array.prototype.slice.call(document.querySelectorAll('details.act'));
+  var btn = document.getElementById('expand');
+  function setAll(open){
+    all.forEach(function(d){ d.open = open; });
+    btn.setAttribute('aria-pressed', String(open));
+    btn.textContent = open ? 'Close all sub-tasks' : 'Open all sub-tasks';
+  }
+  btn.addEventListener('click', function(){ setAll(btn.getAttribute('aria-pressed') !== 'true'); });
+  window.addEventListener('beforeprint', function(){ setAll(true); });
 })();
 </script>
 </body>

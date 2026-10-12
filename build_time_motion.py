@@ -1,0 +1,775 @@
+#!/usr/bin/env python3
+"""Render data/qaqc-time-motion.xlsx into index.html: the pilot's time and motion.
+
+The workbook has one tab per unit. Down each tab, one row per activity with its
+minutes and its clock times (HHMM, so 957 is 09:57). Each fill colour is a
+different person: the "(total)" row of a colour is that person's activity, and
+the rows below it in the same colour are its sub-tasks. This page lays each
+unit out by person and activity, sub-tasks in a dropdown, with whatever the
+sub-tasks do not account for shown as "Other functional".
+
+As elsewhere on the site, nothing is corrected. A blank row is "Activity
+pending"; 0 minutes or "not recorded seperately" is "Not recorded separately";
+and minutes that disagree with the row's own clock times are flagged on the
+page, not fixed.
+
+Needs openpyxl (pip install openpyxl).
+"""
+
+import math
+import re
+from pathlib import Path
+
+import theme
+from theme import GENERATED, esc
+
+ROOT = Path(__file__).parent
+XLSX_PATH = ROOT / "data" / "qaqc-time-motion.xlsx"
+OUT_PATH = ROOT / "index.html"
+
+# Tabs that are not units on the page.
+EXCLUDE = {"Gems-E511B_old"}  # superseded by Gems-E511B
+
+# Each fill colour in the sheet is one person, keyed by the Office theme slot
+# the sheet fills with. The page colours keep the sheet's hues (orange, blue,
+# purple, green) as a categorical set validated for colour-blind separation.
+PEOPLE = {
+    5: ("mepg", "MEP inspector"),
+    4: ("meps", "MEP specialist"),
+    8: ("qa", "QA inspector"),
+    9: ("cap", "Capture operator"),
+}
+SLOTS = [slot for slot, _ in PEOPLE.values()]
+
+# Not timed in the sheet, and the same for every unit.
+TESTS = [
+    ("Flood test", "Contractor", "done", "Done by contractor",
+     "Already conducted by the contractor. Results are incorporated during QA and MEP snagging."),
+    ("Static / spray test", "", "pending", "Pending",
+     "Conducted at a later stage of snagging."),
+]
+
+STATE_TEXT = {"pending": "Activity pending", "separate": "Not recorded separately"}
+
+
+# ---------------------------------------------------------------- parsing ---
+
+def fmt_dur(mins):
+    """Hours and minutes, as on the activity log."""
+    h, m = divmod(mins, 60)
+    return f"{h}h {m:02d}m" if h else f"{m}m"
+
+
+def fmt_clock(t):
+    return f"{t // 60:02d}:{t % 60:02d}"
+
+
+def fmt_windows(sessions, sep=", "):
+    return sep.join(f"{fmt_clock(s)}&ndash;{fmt_clock(e)}" for s, e in sessions)
+
+
+def plain(s):
+    """Tooltip text: the entities fmt_windows emits, as characters."""
+    return s.replace("&ndash;", "–")
+
+
+def clock(v):
+    """Minutes past midnight from an HHMM integer. Blank and 0 are no time."""
+    if not isinstance(v, (int, float)) or not v:
+        return None
+    h, m = divmod(int(v), 100)
+    return h * 60 + m if h < 24 and m < 60 else None
+
+
+def reading(v):
+    """What the minutes cell says: (state, minutes)."""
+    if v is None or (isinstance(v, str) and not v.strip()):
+        return "pending", None
+    if isinstance(v, (int, float)):
+        return ("separate", None) if v == 0 else ("recorded", round(v))
+    if "not recorded" in v.lower():
+        return "separate", None
+    return "text", v.strip()
+
+
+def fill_key(cell):
+    f = cell.fill
+    if not f or not f.fill_type:
+        return None
+    c = f.fgColor
+    return c.theme if c.type == "theme" else c.rgb
+
+
+def session_pairs(ws):
+    """Columns of start/end pairs, from the header row. The sheet runs a
+    second pair along where an activity was split over two sessions."""
+    pairs, c = [], 3
+    while [str(ws.cell(1, c + i).value or "").strip().lower() for i in (0, 1)] == ["start", "end"]:
+        pairs.append((c, c + 1))
+        c += 2
+    return pairs
+
+
+def read_row(ws, r, pairs):
+    state, minutes = reading(ws.cell(r, 2).value)
+    sessions, flags = [], []
+    for cs, ce in pairs:
+        s, e = clock(ws.cell(r, cs).value), clock(ws.cell(r, ce).value)
+        if s is None or e is None:
+            continue
+        if e <= s:
+            flags.append(f"Ends {fmt_clock(e)}, before its start at {fmt_clock(s)}.")
+            continue
+        sessions.append((s, e))
+    if state == "recorded" and sessions:
+        span = sum(e - s for s, e in sessions)
+        if span != minutes:
+            flags.append(f"{plain(fmt_windows(sessions))} is {fmt_dur(span)}; "
+                         f"the sheet records {fmt_dur(minutes)}.")
+    return {"state": state, "minutes": minutes if state == "recorded" else None,
+            "text": minutes if state == "text" else None,
+            "sessions": sessions, "flags": flags}
+
+
+def strip_prefix(label, parent_label):
+    """'QA tile tapping' under 'QA functional' reads as 'Tile tapping'."""
+    word = parent_label.split()[0]
+    rest = label[len(word):].strip() if label.lower().startswith(word.lower() + " ") else label
+    return rest[:1].upper() + rest[1:]
+
+
+def read_unit(name, ws, wsv):
+    pairs = session_pairs(ws)
+    groups, totals = {}, []
+    for r in range(2, ws.max_row + 1):
+        label = str(ws.cell(r, 1).value or "").strip()
+        if not label:
+            continue
+        if label.lower().startswith("total"):
+            totals.append((label, label[5:].strip().lower(), wsv.cell(r, 2).value))
+            continue
+        key = fill_key(ws.cell(r, 1))
+        if key not in PEOPLE:
+            raise SystemExit(f"{name}!A{r} ({label!r}) has fill {key!r}, which is not a "
+                             f"known person. Add it to PEOPLE in {Path(__file__).name}.")
+        groups.setdefault(key, []).append(dict(read_row(ws, r, pairs), sheet_label=label))
+
+    activities = []
+    for key, rows in groups.items():
+        slot, person = PEOPLE[key]
+        parent = next((x for x in rows if "(total)" in x["sheet_label"].lower()), rows[0])
+        subs = [x for x in rows if x is not parent]
+        label = re.sub(r"\s*\(total\)\s*$", "", parent["sheet_label"], flags=re.I)
+        if slot == "cap":
+            label = f"Capture ({label})"
+        for s in subs:
+            s["label"] = strip_prefix(s["sheet_label"], label)
+            if s["sessions"] and parent["sessions"] and not all(
+                    any(ps <= a and b <= pe for ps, pe in parent["sessions"])
+                    for a, b in s["sessions"]):
+                s["flags"].append(f"Logged {plain(fmt_windows(s['sessions']))}, outside "
+                                  f"{label}'s {plain(fmt_windows(parent['sessions']))}.")
+                s["outside"] = True
+
+        other = None
+        if subs:
+            other = {"label": "Other functional", "state": parent["state"], "minutes": None,
+                     "flags": [], "within": [s["label"] for s in subs if s["state"] == "separate"]}
+            if parent["state"] == "recorded":
+                known = sum(s["minutes"] for s in subs if s["state"] == "recorded")
+                other["minutes"] = parent["minutes"] - known
+                if other["minutes"] < 0:
+                    other["flags"].append(f"The sub-tasks add up to {fmt_dur(known)}, more than "
+                                          f"the {fmt_dur(parent['minutes'])} recorded for {label}.")
+        activities.append(dict(parent, label=label, slot=slot, person=person,
+                               subs=subs, other=other))
+    activities.sort(key=lambda a: SLOTS.index(a["slot"]))
+    return {"name": name, "slug": re.sub(r"[^A-Za-z0-9]+", "-", name).strip("-"),
+            "activities": activities, "sheet_totals": totals}
+
+
+def check_totals(unit):
+    """The sheet's own totals block, against the rows above it. A mismatch
+    lands on the tile covering the same people."""
+    flags = {}
+    for label, word, stated in unit["sheet_totals"]:
+        acts = [a for a in unit["activities"]
+                if not word or a["sheet_label"].lower().startswith(word)]
+        slots = frozenset(a["slot"] for a in acts) if word else frozenset(SLOTS)
+        computed = sum(a["minutes"] or 0 for a in acts)
+        if isinstance(stated, (int, float)) and round(stated) != computed:
+            flags[slots] = (f"The sheet's {label!r} says {fmt_dur(round(stated))}; "
+                            f"its rows add up to {fmt_dur(computed)}.")
+    return flags
+
+
+def mark_repeats(units):
+    """A sub-task logged outside its activity is often a row carried over from
+    another tab. Say so where the times match exactly."""
+    for u in units:
+        for a in u["activities"]:
+            for s in a["subs"]:
+                if not s.get("outside"):
+                    continue
+                same = [v["name"] for v in units if v is not u
+                        for b in v["activities"] for t in b["subs"]
+                        if t["sheet_label"] == s["sheet_label"] and t["sessions"] == s["sessions"]]
+                if same:
+                    s["flags"].append(f"{', '.join(same)} logs the same times for {s['label']}.")
+
+
+def read_units():
+    try:
+        import openpyxl
+    except ImportError:
+        raise SystemExit("build_time_motion.py needs openpyxl: pip install openpyxl")
+    wb = openpyxl.load_workbook(XLSX_PATH)
+    wbv = openpyxl.load_workbook(XLSX_PATH, data_only=True)  # cached totals
+    units = [read_unit(ws.title, ws, wbv[ws.title]) for ws in wb.worksheets
+             if ws.title not in EXCLUDE and ws.sheet_state == "visible"]
+    mark_repeats(units)
+    for u in units:
+        u["total_flags"] = check_totals(u)
+    return units
+
+
+# ----------------------------------------------------------------- render ---
+
+def warn(flags):
+    if not flags:
+        return ""
+    tip = " ".join(flags)
+    return (f'<span class="warn" tabindex="0" role="note" aria-label="{esc(tip)}" '
+            f'data-tip="{esc(tip)}">!</span>')
+
+
+def pill(state):
+    return f'<span class="st st-{state}">{STATE_TEXT[state]}</span>'
+
+
+def short_label(a):
+    """'MEP specialist (above ceiling)' as 'MEP specialist'; capture as its platform."""
+    if a["slot"] == "cap":
+        return a["label"].replace("Capture (", "").rstrip(")")
+    return re.sub(r"\s*\(.*\)$", "", a["label"])
+
+
+def minutes_of(acts, slots):
+    return sum(a["minutes"] or 0 for a in acts if a["slot"] in slots)
+
+
+def logged_times(unit):
+    return [t for a in unit["activities"] for x in [a] + a["subs"]
+            for s in x["sessions"] for t in s]
+
+
+def axis_for(unit):
+    times = logged_times(unit) or [9 * 60, 17 * 60]  # nothing timed yet: a working day
+    lo = (min(times) // 60) * 60
+    hi = max(lo + 120, math.ceil(max(times) / 60) * 60)
+    step = 30 if hi - lo <= 180 else 60
+    return lo, hi, list(range(lo, hi + 1, step))
+
+
+def pos(t, axis):
+    lo, hi, _ = axis
+    return 100 * (t - lo) / (hi - lo)
+
+
+def track(axis, bars=(), wash=(), note=""):
+    ticks = "".join(f'<i class="tk" style="left:{pos(t, axis):.3f}%"></i>' for t in axis[2])
+    spans = "".join(
+        f'<span class="wash" style="left:{pos(s, axis):.3f}%;width:{pos(e, axis) - pos(s, axis):.3f}%"></span>'
+        for s, e in wash)
+    spans += "".join(
+        f'<span class="bar" style="left:{pos(s, axis):.3f}%;width:{pos(e, axis) - pos(s, axis):.3f}%"'
+        f' title="{esc(tip)}"></span>' for s, e, tip in bars)
+    note = f'<span class="trk-note">{note}</span>' if note else ""
+    return f'<div class="c-trk"><div class="trk">{ticks}{spans}{note}</div></div>'
+
+
+def time_cell(x):
+    if x["state"] == "recorded":
+        return f'<div class="c-time"><span class="mins mono">{fmt_dur(x["minutes"])}</span>{warn(x["flags"])}</div>'
+    if x["state"] == "text":
+        return f'<div class="c-time"><span class="mins">{esc(x["text"])}</span></div>'
+    return f'<div class="c-time">{pill(x["state"])}{warn(x["flags"])}</div>'
+
+
+CHEVRON = ('<svg class="chev" viewBox="0 0 16 16" aria-hidden="true">'
+           '<path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" '
+           'stroke-linecap="round" stroke-linejoin="round"/></svg>')
+
+
+def render_activity(unit, a, axis):
+    bars = [(s, e, f'{unit["name"]} · {a["label"]} · {plain(fmt_windows([(s, e)]))}')
+            for s, e in a["sessions"]]
+    logged = fmt_windows(a["sessions"], "<br>") if a["sessions"] else "&mdash;"
+    hint = ""
+    if a["subs"]:
+        n = len(a["subs"])
+        hint = (f'<span class="hint">{n} sub-task{"s" if n > 1 else ""} '
+                f'+ other functional</span>')
+    name = (f'<div class="c-name">{CHEVRON if a["subs"] else "<i class=chev-sp></i>"}'
+            f'<i class="sw"></i><span class="nm"><b>{esc(a["label"])}</b>'
+            f'<span class="who">{esc(a["person"])}</span>{hint}</span></div>')
+    row = (f'{name}<div class="c-log mono">{logged}</div>{time_cell(a)}'
+           f'{track(axis, bars)}')
+    if not a["subs"]:
+        return f'<div class="act p-{a["slot"]}"><div class="row">{row}</div></div>'
+
+    subs = []
+    for s in a["subs"]:
+        bars = [(x, y, f'{unit["name"]} · {s["label"]} · {plain(fmt_windows([(x, y)]))}')
+                for x, y in s["sessions"]]
+        subs.append(
+            f'<div class="row sub"><div class="c-name"><span class="nm">{esc(s["label"])}</span></div>'
+            f'<div class="c-log mono">{fmt_windows(s["sessions"], "<br>") if s["sessions"] else "&mdash;"}</div>'
+            f'{time_cell(s)}{track(axis, bars, a["sessions"])}</div>')
+    o = a["other"]
+    within = (f'<span class="who">Includes {esc(", ".join(o["within"]).lower())}, '
+              f'not recorded separately</span>' if o["within"] else "")
+    subs.append(
+        f'<div class="row sub other"><div class="c-name"><span class="nm">Other functional'
+        f'<span class="who">{esc(a["label"])} time not covered by the sub-tasks</span>{within}</span></div>'
+        f'<div class="c-log">Rest of session</div>{time_cell(o)}'
+        f'{track(axis, (), a["sessions"])}</div>')
+    return (f'<details class="act p-{a["slot"]}"><summary class="row">{row}</summary>'
+            f'<div class="subs">{"".join(subs)}</div></details>')
+
+
+def render_tests(axis):
+    out = []
+    for label, who, state, status, note in TESTS:
+        out.append(
+            f'<div class="act test"><div class="row">'
+            f'<div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i>'
+            f'<span class="nm"><b>{esc(label)}</b>'
+            + (f'<span class="who">{esc(who)}</span>' if who else "") + '</span></div>'
+            f'<div class="c-log">&mdash;</div>'
+            f'<div class="c-time"><span class="st st-{state}">{esc(status)}</span></div>'
+            f'{track(axis, note=esc(note))}</div></div>')
+    return "".join(out)
+
+
+TILES = [
+    ("Recorded time", frozenset(SLOTS)),
+    ("MEP", frozenset({"mepg", "meps"})),
+    ("QA", frozenset({"qa"})),
+    ("Capture", frozenset({"cap"})),
+]
+
+
+def tile_sub(acts, slots):
+    """What a tile is made of, or why it is short."""
+    inside = [a for a in acts if a["slot"] in slots]
+    if len(slots) == len(SLOTS):
+        n = len({a["slot"] for a in inside if a["state"] == "recorded"})
+        return f"{n} {'person' if n == 1 else 'people'}, all activities"
+    bits = []
+    for a in inside:
+        short = short_label(a)
+        if a["state"] == "recorded":
+            bits.append(f'{esc(short)} {fmt_dur(a["minutes"])}' if len(inside) > 1 else esc(short))
+        else:
+            bits.append(f'{esc(short)} {STATE_TEXT.get(a["state"], "").lower()}')
+    return " + ".join(bits) or "&mdash;"
+
+
+def render_unit(u):
+    acts, axis = u["activities"], axis_for(u)
+    tiles = []
+    for label, slots in TILES:
+        inside = [a for a in acts if a["slot"] in slots]
+        if inside and all(a["state"] != "recorded" for a in inside):
+            v = "&mdash;"
+        else:
+            v = fmt_dur(minutes_of(acts, slots))
+        tiles.append(f'<div class="tile"><span class="k">{label}{warn([u["total_flags"][slots]]) if slots in u["total_flags"] else ""}</span>'
+                     f'<span class="v mono">{v}</span><span class="s">{tile_sub(acts, slots)}</span></div>')
+
+    times = logged_times(u)
+    cap = next((a for a in acts if a["slot"] == "cap"), None)
+    bits = []
+    if cap:
+        bits.append(f"capture on <b>{esc(short_label(cap))}</b>"
+                    + (" &middot; pending" if cap["state"] == "pending" else ""))
+    if times:
+        bits.append(f"first to last logged activity <b>{fmt_clock(min(times))}&ndash;"
+                    f"{fmt_clock(max(times))}</b>")
+    else:
+        bits.append("no activity logged yet")
+    sub = " &middot; ".join(bits)
+    sub = sub[:1].upper() + sub[1:]
+
+    lo, hi, ticks = axis
+    labels = "".join(
+        f'<span style="left:{pos(t, axis):.3f}%"'
+        + (' class="first"' if t == lo else ' class="last"' if t == hi else "")
+        + f'>{fmt_clock(t)}</span>' for t in ticks)
+    return f"""
+<article class="card unit-card" id="u-{esc(u["slug"])}" data-unit="{esc(u["slug"])}">
+  <div class="uhead">
+    <div class="uname">
+      <h3>{esc(u["name"])}</h3>
+      <p class="usub">{sub}</p>
+    </div>
+    <div class="tiles">{"".join(tiles)}</div>
+  </div>
+  <div class="acts">
+    <div class="row head" aria-hidden="true">
+      <div class="c-name">Activity</div><div class="c-log">Logged</div>
+      <div class="c-time">Time</div>
+      <div class="c-trk"><div class="axis">{labels}</div></div>
+    </div>
+    {"".join(render_activity(u, a, axis) for a in acts)}
+    <div class="tests-head">Tests</div>
+    {render_tests(axis)}
+  </div>
+</article>"""
+
+
+def render_compare(units):
+    """Recorded time per unit, split by person. Bar length is comparable across
+    units; the card below each one breaks it down."""
+    totals = {u["slug"]: minutes_of(u["activities"], SLOTS) for u in units}
+    peak = max(totals.values()) or 1
+    names = dict(PEOPLE.values())
+    labels = {}
+    for u in units:
+        for a in u["activities"]:
+            labels.setdefault(a["slot"], a["label"] if a["slot"] != "cap" else "Capture")
+
+    rows = []
+    for u in units:
+        by = {a["slot"]: a for a in u["activities"]}
+        segs = "".join(
+            f'<i class="p-{s}" style="flex:{by[s]["minutes"]}" title="{esc(u["name"])} · '
+            f'{esc(labels[s])} ({esc(names[s])}) · {fmt_dur(by[s]["minutes"])}"></i>'
+            for s in SLOTS if s in by and by[s]["state"] == "recorded")
+        notes = []
+        for state, word in (("pending", "pending"), ("separate", "not recorded separately")):
+            missing = [("capture" if s == "cap" else short_label(by[s]))
+                       for s in SLOTS if s in by and by[s]["state"] == state]
+            if missing:
+                notes.append(f'{" and ".join(missing)} {word}')
+        note = f'<span class="cmp-note">{esc("; ".join(notes))}</span>' if notes else ""
+        frac = totals[u["slug"]] / peak
+        rows.append(f"""
+    <div class="cmp-row" data-unit="{esc(u["slug"])}">
+      <a class="cmp-u" href="#u-{esc(u["slug"])}">{esc(u["name"])}</a>
+      <div class="cmp-track">
+        <div class="cmp-bar" style="--f:{frac:.4f}">{segs}</div>
+        <span class="cmp-lab mono">{fmt_dur(totals[u["slug"]])}</span>{note}
+      </div>
+    </div>""")
+
+    legend = "".join(
+        f'<span class="p-{s}"><i class="sw"></i>{esc(labels[s])} '
+        + ("" if labels[s].startswith(names[s]) else f'<span class="lg-who">{esc(names[s])}</span> ')
+        + f'<b class="mono">{fmt_dur(sum(minutes_of(u["activities"], {s}) for u in units))}</b></span>'
+        for s in SLOTS if s in labels)
+    return f"""
+<section class="card" aria-labelledby="cmp-h">
+  <div class="card-head">
+    <h2 id="cmp-h">Recorded time by unit</h2>
+    <p class="card-sub">Minutes logged on site, split by the person who logged them. Bar length is
+    comparable across units. Unit names jump to the breakdown below.</p>
+  </div>
+  <div class="legend">{legend}</div>
+  <div class="cmp">{"".join(rows)}</div>
+</section>"""
+
+
+def render(units):
+    all_acts = [a for u in units for a in u["activities"]]
+    total = minutes_of(all_acts, SLOTS)
+    caps = [u for u in units if any(a["slot"] == "cap" and a["state"] == "recorded"
+                                    for a in u["activities"])]
+    strip = "".join(f'<div><span class="k">{k}</span><span class="v mono">{v}</span>'
+                    f'<span class="s">{s}</span></div>' for k, v, s in [
+        ("Units", str(len(units)), ", ".join(esc(u["name"]) for u in units)),
+        ("Recorded time", fmt_dur(total), "person-time on site, all units"),
+        ("MEP", fmt_dur(minutes_of(all_acts, {"mepg", "meps"})), "general and specialist"),
+        ("QA", fmt_dur(minutes_of(all_acts, {"qa"})), "functional, sub-tasks included"),
+        ("Capture", fmt_dur(minutes_of(all_acts, {"cap"})),
+         f"{len(caps)} of {len(units)} units captured"),
+    ])
+
+    chips = "".join(
+        f'<button class="chip" role="tab" aria-selected="false" data-f="{esc(u["slug"])}">'
+        f'{esc(u["name"])}</button>' for u in units)
+    known = ",".join(f'"{u["slug"]}"' for u in units)
+
+    masthead = theme.masthead(
+        "timemotion", "Pilot time and motion",
+        "How long each activity took on each pilot unit, timed on site. One colour per "
+        "person; open an activity for its sub-tasks.",
+        f"Source <b>QA/QC time + motion</b><br>"
+        f"Units <b>{len(units)}</b> &middot; Generated <b>{GENERATED:%d %b %Y}</b><br>"
+        f"Times as recorded onsite")
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DAMAC snagging pilot &mdash; time and motion</title>
+<meta name="description" content="Time and motion for each unit in the DAMAC x CONXAI snagging pilot.">
+<script>
+/* Links into the activity log used to land here (…/#BL515). Send them on. */
+(function(){{
+  var h = decodeURIComponent(location.hash.slice(1)).replace(/^u-/, '');
+  if (h && [{known}].indexOf(h) < 0) location.replace('activity-logs.html' + location.hash);
+}})();
+</script>
+<style>
+{theme.CHROME_CSS}
+
+/* ------------------------------------------ the time and motion page --- */
+:root{{
+  /* one per person, the sheet's hues; validated as a categorical set */
+  --p-mepg:#cf7b26; --p-meps:#065da0; --p-qa:#a672cb; --p-cap:#1e7546;
+}}
+.p-mepg{{--pc:var(--p-mepg)}} .p-meps{{--pc:var(--p-meps)}}
+.p-qa{{--pc:var(--p-qa)}} .p-cap{{--pc:var(--p-cap)}}
+.sw{{display:block;width:10px;height:10px;border-radius:3px;background:var(--pc);flex:none}}
+
+.legend{{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12.4px;color:var(--ink2);margin-bottom:16px}}
+.legend>span{{display:flex;align-items:center;gap:7px}}
+.legend .lg-who{{color:var(--muted)}}
+.legend b{{color:var(--ink);font-weight:650}}
+.cmp{{display:flex;flex-direction:column;gap:8px}}
+.cmp-row{{display:grid;grid-template-columns:104px 1fr;gap:14px;align-items:center;transition:opacity .15s}}
+.cmp-row.dim{{opacity:.35}}
+.cmp-u{{font-size:12.8px;font-weight:650;color:var(--ink);text-decoration:none}}
+.cmp-u:hover{{text-decoration:underline}}
+.cmp-track{{display:flex;align-items:center;gap:10px;min-width:0}}
+.cmp-bar{{display:flex;gap:2px;height:22px;flex:none;width:calc((100% - 250px) * var(--f))}}
+.cmp-bar i{{display:block;background:var(--pc);min-width:2px}}
+.cmp-bar i:last-child{{border-radius:0 4px 4px 0}}
+.cmp-lab{{font-size:12.8px;font-weight:700;white-space:nowrap}}
+.cmp-note{{font-size:11.6px;color:var(--muted);line-height:1.35;min-width:0;flex:1 1 0}}
+
+.filters{{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:20px;
+  position:sticky;top:0;z-index:5;background:var(--page);padding:10px 0 11px}}
+.filters::after{{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--line)}}
+.flabel{{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:650}}
+.chips{{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:8px;
+  overflow:hidden;background:var(--surface)}}
+.chip,.expand{{font:inherit;font-size:12.5px;padding:8px 13px;border:none;background:none;cursor:pointer;
+  color:var(--ink2)}}
+.chip{{border-right:1px solid var(--line)}}
+.chip:last-child{{border-right:none}}
+.chip:hover,.expand:hover{{background:var(--panel);color:var(--ink)}}
+.chip[aria-selected="true"]{{background:var(--ink);color:#fff;font-weight:600}}
+.chip:focus-visible,.expand:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
+.expand{{margin-left:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}}
+.showing{{font-size:12.5px;color:var(--muted)}}
+
+.uhead{{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
+  padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:6px}}
+.uname h3{{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em}}
+.usub{{color:var(--ink2);font-size:12.8px;margin:5px 0 0}}
+.usub b{{color:var(--ink);font-weight:600}}
+.tiles{{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:9px;flex:0 1 600px}}
+.tile{{background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:10px 12px}}
+.tile .k{{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);font-weight:650;line-height:1.35}}
+.tile .v{{display:block;font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:3px}}
+.tile .s{{display:block;font-size:11.2px;color:var(--ink2);margin-top:3px;line-height:1.45}}
+
+/* activity rows: name | logged | time | timeline */
+.row{{display:grid;grid-template-columns:minmax(210px,1.3fr) 96px 158px minmax(220px,2.3fr);
+  gap:0 16px;align-items:stretch}}
+.row>div{{display:flex;align-items:center;min-width:0}}
+.row>div:not(.c-trk){{padding:9px 0}}
+.act{{border-top:1px solid var(--line2)}}
+.row.head{{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:650}}
+.row.head>div:not(.c-trk){{padding:12px 0 6px}}
+.c-name{{gap:8px}}
+.nm{{display:flex;flex-direction:column;font-size:13px;line-height:1.35}}
+.nm b{{font-weight:650}}
+.who,.hint{{font-size:11.5px;color:var(--muted)}}
+.c-log{{font-size:12px;color:var(--ink2);line-height:1.5}}
+.c-time{{justify-content:flex-end;text-align:right;gap:0}}
+.mins{{font-size:13px;font-weight:650}}
+.chev{{width:16px;height:16px;flex:none;color:var(--muted);transition:transform .15s}}
+.chev-sp{{width:16px;flex:none}}
+details[open]>summary .chev{{transform:rotate(90deg)}}
+summary.row{{cursor:pointer;list-style:none}}
+summary.row::-webkit-details-marker{{display:none}}
+summary.row:hover{{background:var(--panel)}}
+summary.row:hover .chev{{color:var(--ink)}}
+summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
+.subs{{background:var(--panel);border-top:1px solid var(--line2)}}
+.row.sub>.c-name{{padding-left:24px;position:relative}}
+.row.sub>.c-name::before{{content:"";position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--pc);opacity:.45}}
+.row.sub .nm{{font-size:12.6px}}
+.row.sub+.row.sub{{border-top:1px solid var(--line2)}}
+.row.other .nm{{font-weight:600}}
+
+.st{{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:2px 9px;
+  border-radius:999px;white-space:nowrap;line-height:1.55}}
+.st-pending{{background:var(--surface);color:var(--ink2);border:1px solid var(--line)}}
+.st-pending::before{{content:"";width:6px;height:6px;border-radius:50%;border:1.5px solid var(--muted)}}
+.st-separate{{background:var(--line2);color:var(--ink2)}}
+.st-done{{background:var(--ink);color:#fff}}
+.st-done::before{{content:"\\2713";font-size:10px}}
+
+.c-trk{{position:relative}}
+.trk{{position:relative;width:100%;min-height:40px;height:100%}}
+.tk{{position:absolute;top:0;bottom:0;width:1px;background:var(--line2)}}
+.bar,.wash{{position:absolute;top:50%;height:12px;margin-top:-6px;border-radius:3px;background:var(--pc);min-width:3px}}
+.wash{{opacity:.18}}
+.row.sub .bar{{height:10px;margin-top:-5px}}
+.trk-note{{position:absolute;left:10px;right:0;top:50%;transform:translateY(-50%);font-size:11.8px;
+  color:var(--ink2);line-height:1.4}}
+.axis{{position:relative;width:100%;height:100%;min-height:30px}}
+.axis span{{position:absolute;bottom:6px;transform:translateX(-50%);font-family:ui-monospace,monospace;
+  font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:500;color:var(--muted)}}
+.axis span.first{{transform:none}}
+.axis span.last{{transform:translateX(-100%)}}
+.tests-head{{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:650;padding:16px 0 6px;border-top:1px solid var(--line)}}
+.act.test .row>div:not(.c-trk){{padding:8px 0}}
+.act.test .trk{{min-height:36px}}
+.sw-test{{background:none;border:1.5px solid var(--muted)}}
+.act.test .tk{{display:none}}
+
+@media (max-width:860px){{
+  .row{{grid-template-columns:1fr auto;grid-template-areas:"name time" "log log" "trk trk";gap:0 12px}}
+  .c-name{{grid-area:name}} .c-time{{grid-area:time}} .c-log{{grid-area:log}} .c-trk{{grid-area:trk}}
+  .row>div.c-log{{padding:0 0 4px 24px}}
+  .row.sub>div.c-log{{padding-left:24px}}
+  .row.head .c-log{{display:none}}
+  .trk{{min-height:26px}}
+  .trk-note{{position:static;transform:none;display:block;padding:0 0 10px 24px}}
+  .act.test .trk{{min-height:0}}
+  .axis span:nth-child(even){{display:none}}
+}}
+@media (max-width:720px){{
+  .tiles{{grid-template-columns:repeat(2,minmax(110px,1fr));flex:1 1 100%}}
+  .filters{{position:static}}
+  .expand{{margin-left:0}}
+  .cmp-row{{grid-template-columns:1fr;gap:4px}}
+  .cmp-track{{flex-wrap:wrap;gap:4px 10px}}
+  /* the bar takes its own line; total and note sit underneath */
+  .cmp-bar{{height:18px;width:calc(100% * var(--f));margin-right:calc(100% * (1 - var(--f)))}}
+}}
+@media print{{
+  .filters{{display:none}}
+}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+{masthead}
+
+<div class="strip">{strip}</div>
+
+{render_compare(units)}
+
+<div class="filters" role="tablist" aria-label="Filter by unit">
+  <span class="flabel">Unit</span>
+  <div class="chips">
+    <button class="chip" role="tab" aria-selected="true" data-f="all">All</button>
+    {chips}
+  </div>
+  <span class="showing" id="showing">Showing all {len(units)} units</span>
+  <button class="expand" type="button" id="expand" aria-pressed="false">Open all sub-tasks</button>
+</div>
+
+{"".join(render_unit(u) for u in units)}
+
+<div class="notes">
+  <h2>Reading the page</h2>
+  <ul>
+    <li><b>Each colour is a different person</b>, as in the source sheet: the MEP inspector, the MEP
+      specialist, the QA inspector and whoever ran the capture. Times are the minutes each person
+      logged, so a unit's recorded time is person-time, not time on site.</li>
+    <li><b>MEP general</b> and <b>QA functional</b> are totals for the whole activity. Open one for its
+      sub-tasks; <b>Other functional</b> is the total less the sub-tasks that were timed, i.e. the
+      time they do not cover. Sub-tasks share the activity's colour, and the faint band behind them
+      is the activity's own session.</li>
+    <li><b>Not recorded separately</b> means the sheet logs 0 minutes or says so: the time is inside
+      the activity total, and so inside Other functional. <b>Activity pending</b> means the sheet's row
+      is blank.</li>
+    <li><b>Flood test</b> was already conducted by the contractor on every unit; its results are
+      incorporated during QA and MEP snagging. The <b>static / spray test</b> is pending and is
+      conducted at a later stage of snagging.</li>
+    <li>A <span class="warn">!</span> marks minutes that do not agree with the clock times logged beside
+      them. Hover it for the arithmetic. Minutes are shown exactly as the sheet records them, and every
+      total is built from them &mdash; nothing has been corrected.</li>
+    <li>The workbook's <span class="mono">Gems-E511B_old</span> tab is an earlier take of Gems-E511B and
+      is not shown.</li>
+  </ul>
+</div>
+
+<p class="foot">
+  Generated from <span class="mono">data/qaqc-time-motion.xlsx</span> by
+  <span class="mono">build_time_motion.py</span> &middot; {GENERATED:%d %b %Y}.
+  Re-run <span class="mono">build.py</span> after updating the workbook to refresh this page.
+</p>
+
+</div>
+<script>
+(function(){{
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.unit-card'));
+  var rows  = Array.prototype.slice.call(document.querySelectorAll('.cmp-row'));
+  var out   = document.getElementById('showing');
+  var known = chips.map(function(c){{ return c.dataset.f; }});
+  var names = {{}};
+  chips.forEach(function(c){{ names[c.dataset.f] = c.textContent; }});
+
+  function apply(f, push){{
+    chips.forEach(function(c){{ c.setAttribute('aria-selected', String(c.dataset.f === f)); }});
+    cards.forEach(function(c){{ c.hidden = !(f === 'all' || c.dataset.unit === f); }});
+    rows.forEach(function(r){{ r.classList.toggle('dim', f !== 'all' && r.dataset.unit !== f); }});
+    out.textContent = f === 'all' ? 'Showing all ' + cards.length + ' units' : 'Showing ' + names[f] + ' only';
+    if (push) history.replaceState(null, '', f === 'all' ? location.pathname : '#' + f);
+  }}
+  function fromHash(){{
+    var h = decodeURIComponent(location.hash.replace(/^#(u-)?/, ''));
+    return known.indexOf(h) > -1 ? h : 'all';
+  }}
+
+  chips.forEach(function(c){{
+    c.addEventListener('click', function(){{ apply(c.dataset.f, true); }});
+  }});
+  window.addEventListener('hashchange', function(){{ apply(fromHash(), false); }});
+  apply(fromHash(), false);
+
+  var all = Array.prototype.slice.call(document.querySelectorAll('details.act'));
+  var btn = document.getElementById('expand');
+  function setAll(open){{
+    all.forEach(function(d){{ d.open = open; }});
+    btn.setAttribute('aria-pressed', String(open));
+    btn.textContent = open ? 'Close all sub-tasks' : 'Open all sub-tasks';
+  }}
+  btn.addEventListener('click', function(){{ setAll(btn.getAttribute('aria-pressed') !== 'true'); }});
+  window.addEventListener('beforeprint', function(){{ setAll(true); }});
+}})();
+</script>
+</body>
+</html>
+"""
+
+
+def main():
+    units = read_units()
+    OUT_PATH.write_text(render(units), encoding="utf-8")
+    flagged = sum(1 for u in units for a in u["activities"]
+                  for x in [a] + a["subs"] + ([a["other"]] if a["other"] else [])
+                  if x["flags"]) + sum(len(u["total_flags"]) for u in units)
+    print(f"wrote {OUT_PATH} ({OUT_PATH.stat().st_size:,} bytes) "
+          f"for {len(units)} units: {', '.join(u['name'] for u in units)}; "
+          f"flagged {flagged}")
+
+
+if __name__ == "__main__":
+    main()

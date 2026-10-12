@@ -149,7 +149,7 @@ def render_outcomes(data, flags):
             for k, n in parts if n > 0)
         rows.append(f"""
     <div class="srow">
-      <a class="sunit mono" href="index.html#{esc(v["unit"])}"
+      <a class="sunit mono" href="activity-logs.html#{esc(v["unit"])}"
          title="Open {esc(v["unit"])} in the activity log">{esc(v["unit"])}</a>
       <div class="strack">
         <div class="sbar" style="width:{100 * v["snags"] / peak:.3f}%">{segs}</div>

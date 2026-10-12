@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render data/activity-logs.csv into a static index.html, organised by unit.
+"""Render data/activity-logs.csv into a static activity-logs.html, organised by unit.
 
 The CSV is a matrix: activity phases down the rows, units across the columns.
 This flips it so each unit gets its own card, and keeps the original matrix at
@@ -14,12 +14,13 @@ from datetime import date, datetime
 from pathlib import Path
 
 import build_review
+import build_time_motion
 import theme
 from theme import GENERATED, esc
 
 ROOT = Path(__file__).parent
 CSV_PATH = ROOT / "data" / "activity-logs.csv"
-OUT_PATH = ROOT / "index.html"
+OUT_PATH = ROOT / "activity-logs.html"
 
 # ---------------------------------------------------------------- parsing ---
 
@@ -737,6 +738,7 @@ def main():
     print(f"wrote {OUT_PATH} ({OUT_PATH.stat().st_size:,} bytes) "
           f"for {len(units)} units: {', '.join(units)}")
     build_review.main()
+    build_time_motion.main()
 
 
 if __name__ == "__main__":
