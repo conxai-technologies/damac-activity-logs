@@ -1,19 +1,57 @@
 # DAMAC snagging pilot
 
-Two pages, one masthead, tabbed together. Each is a real file with its own
-URL, so either can be linked to on its own.
+Four pages, one masthead, tabbed together. Each is a real file with its own
+URL, so any of them can be linked to on its own.
 
 **https://conxai-technologies.github.io/damac-activity-logs/**
 
 | Tab | Page | Built from |
 | --- | --- | --- |
-| Activity logs | `index.html` | `data/activity-logs.csv` via `build.py` |
+| Pilot time and motion Lagoons – Ibiza (default) | `index.html` | `data/qaqc-time-motion.xlsx` via `build_time_motion.py` |
+| Pilot time and motion Hills – Gems | `time-motion-gems.html` | the same workbook, same script |
 | Review Stats | `review-stats.html` | `data/review-stats.json` via `build_review.py` |
+| Archived activities | `activity-logs.html` | `data/activity-logs.csv` via `build.py` |
 
-Deep links: `…/#BL515` on the activity log, `…/review-stats.html` for the
-review stats.
+Deep links: `…/#Ibiza-T241` on Lagoons – Ibiza, `…/activity-logs.html#BL515` on
+archived activities, `…/review-stats.html` for the review stats. The archived
+activity log used to be the site root, so `index.html` forwards any hash it
+does not know (`…/#BL515`) to `activity-logs.html`.
 
-## Activity logs
+## Pilot time and motion
+
+Minutes logged on site per activity, for each unit in the *QAQC Time + motion*
+workbook, one page per project: **Lagoons – Ibiza** (T240–T245) and
+**Hills – Gems** (E511B). Each unit is its own tab in the workbook, and lands on
+the page whose project its tab name starts with (`SITES` in
+`build_time_motion.py`). `Gems-E511B_old` is an earlier take of Gems-E511B and
+is skipped.
+
+Each fill colour in the workbook is a different person, and the page keeps one
+colour per person: MEP inspector (MEP general), MEP specialist (above ceiling),
+QA inspector (QA functional), and capture (iGUIDE or Matterport).
+
+- **Recorded time by unit** — each unit's minutes, split by person (on a page
+  with more than one unit).
+- **One card per unit** — every activity with its logged clock times, its
+  minutes, and a timeline of the day. MEP general and QA functional open as a
+  dropdown onto their sub-tasks (roof, yard; inside cupboard, tile tapping,
+  roof) plus **Other functional**: the activity's minutes less its timed
+  sub-tasks.
+- **Tests** on every unit: the flood test (30 min) was already conducted by
+  the contractor, with its results incorporated during QA and MEP snagging,
+  and stays out of the unit totals; the static test (20 min) is completed and
+  counts towards each unit's recorded time. Neither has start and end times
+  logged (`TESTS`).
+
+A blank MEP specialist row is shown as 30 minutes, marked *Start and end time
+not logged*, and counts towards the unit's MEP and recorded time (`UNTIMED`);
+the check against the workbook's own totals block leaves it out. Any other
+blank row is shown as **Activity pending**; 0 minutes or "not recorded
+seperately" as **Not recorded separately**. The workbook's minutes are used
+as-is, and where they disagree with the row's own clock times by more than
+2 minutes (`ROUNDING`) the page flags it; smaller differences are rounding.
+
+## Archived activities
 
 Time and effort logged for each unit, organised one card per unit.
 
@@ -57,21 +95,29 @@ ones the page shows.
 
 ## Rebuilding
 
-Both pages are generated. `build.py` builds the activity log and then calls
-`build_review.py`, so one command refreshes the site:
+Every page is generated. `build.py` builds archived activities and then calls
+`build_review.py` and `build_time_motion.py`, so one command refreshes the
+site. Time and motion reads the workbook directly (cell fills included), which
+needs `openpyxl`:
 
 ```sh
+pip install openpyxl
 cp "…/Damac snagging schedules - Activity logs.csv" data/activity-logs.csv
+cp "…/QAQC_TIme+motion.xlsx" data/qaqc-time-motion.xlsx
 python3 build.py
 git commit -am "Refresh" && git push
 ```
 
 `theme.py` holds the design tokens, the masthead and the tab bar — the chrome
-both pages wear. Add a page by appending it to `theme.PAGES` and giving it a
+every page wears. Add a page by appending it to `theme.PAGES` and giving it a
 build script.
 
-Nothing is inferred on either page. `build.py` normalises the sheet's mixed
+Nothing is inferred on any page. `build.py` normalises the sheet's mixed
 date formats and duration strings; `build_review.py` recomputes every total and
-percentage the deck prints from the villa rows beside it. Either way a mismatch
-is flagged on the page rather than corrected, `N/A` renders as `—`, and `tbc`
-stays `tbc`.
+percentage the deck prints from the villa rows beside it; `build_time_motion.py`
+checks each row's minutes against its clock times and the workbook's own totals
+block. Every way a mismatch is flagged on the page rather than corrected, `N/A`
+renders as `—`, and `tbc` stays `tbc`.
+
+A new fill colour in the workbook stops `build_time_motion.py` with the cell to
+look at; map it to a person in `PEOPLE` at the top of the script.

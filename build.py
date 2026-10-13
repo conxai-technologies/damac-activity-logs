@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render data/activity-logs.csv into a static index.html, organised by unit.
+"""Render data/activity-logs.csv into a static activity-logs.html, organised by unit.
 
 The CSV is a matrix: activity phases down the rows, units across the columns.
 This flips it so each unit gets its own card, and keeps the original matrix at
@@ -14,12 +14,13 @@ from datetime import date, datetime
 from pathlib import Path
 
 import build_review
+import build_time_motion
 import theme
 from theme import GENERATED, esc
 
 ROOT = Path(__file__).parent
 CSV_PATH = ROOT / "data" / "activity-logs.csv"
-OUT_PATH = ROOT / "index.html"
+OUT_PATH = ROOT / "activity-logs.html"
 
 # ---------------------------------------------------------------- parsing ---
 
@@ -535,7 +536,7 @@ def render(units, areas, block_order, blocks, resolve, unit_phases):
     ])
 
     masthead = theme.masthead(
-        "activity", "Activity log",
+        "activity", "Archived activities",
         "What each unit cost in time &mdash; manual QA and MEP snagging onsite, "
         "against photo capture and CONXAI processing. One card per unit.",
         f"Source <b>Damac snagging schedules &mdash; Activity logs</b><br>"
@@ -548,7 +549,7 @@ def render(units, areas, block_order, blocks, resolve, unit_phases):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>DAMAC snagging pilot &mdash; activity log</title>
+<title>DAMAC snagging pilot &mdash; archived activities</title>
 <meta name="description" content="Time and effort logged for each unit in the DAMAC x CONXAI snagging pilot.">
 <style>
 {theme.CHROME_CSS}
@@ -737,6 +738,7 @@ def main():
     print(f"wrote {OUT_PATH} ({OUT_PATH.stat().st_size:,} bytes) "
           f"for {len(units)} units: {', '.join(units)}")
     build_review.main()
+    build_time_motion.main()
 
 
 if __name__ == "__main__":

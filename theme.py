@@ -1,8 +1,8 @@
 """Chrome shared by every page of the site: tokens, masthead, tabs, footer.
 
-Both build.py (Activity logs) and build_review.py (Review Stats) render their
-own body from their own data, but the frame around it lives here so the two
-pages cannot drift apart.
+build_time_motion.py (the two time and motion pages), build.py (Archived activities) and
+build_review.py (Review Stats) each render their own body from their own data,
+but the frame around it lives here so the pages cannot drift apart.
 """
 
 import html
@@ -12,8 +12,10 @@ GENERATED = date.today()
 
 # The pages of the site, in tab order: (slug, label, file).
 PAGES = [
-    ("activity", "Activity logs", "index.html"),
+    ("tm-ibiza", "Pilot time and motion Lagoons \u2013 Ibiza", "index.html"),
+    ("tm-gems", "Pilot time and motion Hills \u2013 Gems", "time-motion-gems.html"),
     ("review", "Review Stats", "review-stats.html"),
+    ("activity", "Archived activities", "activity-logs.html"),
 ]
 
 
@@ -133,8 +135,11 @@ h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
   .provenance{text-align:left}
   .brand-logos img[alt="DAMAC"]{max-height:14px}
   .conxai-logo{max-width:140px}
-  .tabs{margin-top:14px}
-  .tab{padding:8px 12px 9px;font-size:12.5px}
+  /* too narrow for folder tabs side by side: wrap them as one-line pills */
+  .tabs{flex-wrap:wrap;gap:6px;margin:14px 0 14px}
+  .tab{padding:7px 12px;font-size:12.5px;white-space:nowrap;top:0;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  .tab[aria-current="page"]{background:var(--ink);color:#fff;border:1px solid var(--ink)}
 }
 @media print{
   body{background:#fff} .tabs{display:none} .card{break-inside:avoid}

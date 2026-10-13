@@ -149,8 +149,8 @@ def render_outcomes(data, flags):
             for k, n in parts if n > 0)
         rows.append(f"""
     <div class="srow">
-      <a class="sunit mono" href="index.html#{esc(v["unit"])}"
-         title="Open {esc(v["unit"])} in the activity log">{esc(v["unit"])}</a>
+      <a class="sunit mono" href="activity-logs.html#{esc(v["unit"])}"
+         title="Open {esc(v["unit"])} in archived activities">{esc(v["unit"])}</a>
       <div class="strack">
         <div class="sbar" style="width:{100 * v["snags"] / peak:.3f}%">{segs}</div>
         <span class="slab mono">{num(v["snags"])}</span>
@@ -171,7 +171,7 @@ def render_outcomes(data, flags):
   <div class="card-head">
     <h2>What the review did with each villa's snags</h2>
     <p class="card-sub">Bar length is the villa's material snag count, split into the three
-    outcomes. Villa names link through to the activity log.</p>
+    outcomes. Villa names link through to archived activities.</p>
   </div>
   <div class="legend">{legend}</div>
   <div class="chart">{"".join(rows)}</div>
