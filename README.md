@@ -31,7 +31,12 @@ colour per person: MEP inspector (MEP general), MEP specialist (above ceiling),
 QA inspector (QA functional), and capture (iGUIDE or Matterport).
 
 - **Recorded time by unit** — each unit's minutes, split by person (on a page
-  with more than one unit).
+  with more than one unit). A **Total time / Per 100 m²** switch redraws it
+  normalised to floor area, so units of different sizes compare.
+- **Unit details** — floor area and bedrooms beside each unit's name, and its
+  recorded time per 100 m², from `data/time-motion-units.csv` (the workbook
+  does not carry them). A unit missing from that file simply shows no details;
+  a name in it that is not a workbook tab stops the build.
 - **One card per unit** — every activity with its logged clock times, its
   minutes, and a timeline of the day. MEP general and QA functional open as a
   dropdown onto their sub-tasks (roof, yard; inside cupboard, tile tapping,
@@ -104,6 +109,7 @@ needs `openpyxl`:
 pip install openpyxl
 cp "…/Damac snagging schedules - Activity logs.csv" data/activity-logs.csv
 cp "…/QAQC_TIme+motion.xlsx" data/qaqc-time-motion.xlsx
+# new units: add a line to data/time-motion-units.csv (unit,floor_area_sqm,bedrooms)
 python3 build.py
 git commit -am "Refresh" && git push
 ```
