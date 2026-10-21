@@ -26,6 +26,12 @@ the page whose project its tab name starts with (`SITES` in
 `build_time_motion.py`). `Gems-E511B_old` is an earlier take of Gems-E511B and
 is skipped.
 
+Two corrections from the pilot team are applied at build time, so the workbook
+stays as logged: Ibiza T244 is hidden (`HIDDEN`), and T242's capture is the
+Matterport survey logged on T244's tab rather than the iGUIDE row on its own
+(`CAPTURE_FROM`). The check against each tab's own totals block runs on the
+tab as logged, before either correction.
+
 Each fill colour in the workbook is a different person, and the page keeps one
 colour per person: MEP inspector (MEP general), MEP specialist (above ceiling),
 QA inspector (QA functional), and capture (iGUIDE or Matterport).

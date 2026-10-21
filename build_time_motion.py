@@ -44,6 +44,15 @@ SITES = [
 # Tabs that are not units on any page.
 EXCLUDE = {"Gems-E511B_old"}  # superseded by Gems-E511B
 
+# Units read from the workbook but not shown (another unit may borrow from
+# them), and not mentioned on the page.
+HIDDEN = {"Ibiza T244"}
+
+# A unit whose capture survey is the one logged on another tab:
+# {unit: tab it is logged on}. Per the pilot team, T242 was surveyed with
+# Matterport at the time logged on T244's tab, not with iGUIDE.
+CAPTURE_FROM = {"Ibiza T242": "Ibiza T244"}
+
 # Minutes within this of the row's own clock times are rounding, not flagged.
 ROUNDING = 2
 
@@ -280,12 +289,26 @@ def read_units():
     details = read_details({u["name"] for u in units})
     for u in units:
         u["area"], u["bedrooms"] = details.get(u["name"], (None, None))
-        u["total_flags"] = check_totals(u)
+        u["total_flags"] = check_totals(u)  # against the tab as logged
         u["site"] = next((key for key, prefix, _ in SITES if u["name"].startswith(prefix)), None)
         if u["site"] is None:
             raise SystemExit(f"Workbook tab {u['name']!r} matches no project in SITES "
                              f"({', '.join(prefix for _, prefix, _ in SITES)}). "
                              f"Add one, or list the tab in EXCLUDE.")
+    by_name = {u["name"]: u for u in units}
+    for unit, tab in CAPTURE_FROM.items():
+        if unit not in by_name or tab not in by_name:
+            raise SystemExit(f"CAPTURE_FROM names {unit!r} <- {tab!r}, but the workbook has "
+                             f"no such unit.")
+        cap = next(a for a in by_name[tab]["activities"] if a["slot"] == "cap")
+        dst = by_name[unit]
+        dst["activities"] = sorted(
+            [a for a in dst["activities"] if a["slot"] != "cap"] + [dict(cap, logged_on=tab)],
+            key=lambda a: SLOTS.index(a["slot"]))
+    missing = HIDDEN - set(by_name)
+    if missing:
+        raise SystemExit(f"HIDDEN names {', '.join(sorted(missing))}, not a unit in the workbook.")
+    units = [u for u in units if u["name"] not in HIDDEN]
     # T240 before T241, wherever the tabs sit in the workbook
     units.sort(key=lambda u: [int(t) if t.isdigit() else t.lower()
                               for t in re.split(r"(\d+)", u["name"])])
@@ -506,7 +529,7 @@ def render_unit(u):
     sub = sub[:1].upper() + sub[1:]
 
     lo, hi, ticks = axis
-    every = 2 if len(ticks) > 7 else 1  # a long day: gridline every hour, label every other
+    every = math.ceil(len(ticks) / 5)  # a gridline every step, but at most ~5 labels
     labels = "".join(
         f'<span style="left:{pos(t, axis):.3f}%"'
         + (' class="first"' if t == lo else ' class="last"' if t == hi else "")
