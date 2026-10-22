@@ -129,17 +129,19 @@ h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
   font-size:11.8px;color:var(--muted);line-height:1.7}
 .foot a{color:var(--ink2)}
 
+@media (max-width:960px){
+  /* too narrow for folder tabs side by side: wrap them as one-line pills */
+  .tabs{flex-wrap:wrap;gap:6px;margin:14px 0 14px}
+  .tab{padding:7px 12px;font-size:12.5px;white-space:nowrap;top:0;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  .tab[aria-current="page"]{background:var(--ink);color:#fff;border:1px solid var(--ink)}
+}
 @media (max-width:720px){
   .wrap{padding:24px 15px 70px}
   h1{font-size:27px}
   .provenance{text-align:left}
   .brand-logos img[alt="DAMAC"]{max-height:14px}
   .conxai-logo{max-width:140px}
-  /* too narrow for folder tabs side by side: wrap them as one-line pills */
-  .tabs{flex-wrap:wrap;gap:6px;margin:14px 0 14px}
-  .tab{padding:7px 12px;font-size:12.5px;white-space:nowrap;top:0;
-    border:1px solid var(--line);border-radius:8px;background:var(--surface)}
-  .tab[aria-current="page"]{background:var(--ink);color:#fff;border:1px solid var(--ink)}
 }
 @media print{
   body{background:#fff} .tabs{display:none} .card{break-inside:avoid}

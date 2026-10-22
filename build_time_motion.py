@@ -18,6 +18,7 @@ are flagged on the page, not fixed.
 Needs openpyxl (pip install openpyxl).
 """
 
+import csv
 import math
 import re
 from pathlib import Path
@@ -27,6 +28,11 @@ from theme import GENERATED, esc
 
 ROOT = Path(__file__).parent
 XLSX_PATH = ROOT / "data" / "qaqc-time-motion.xlsx"
+# Floor area and bedrooms per unit; the workbook does not carry them.
+UNITS_PATH = ROOT / "data" / "time-motion-units.csv"
+
+# Floor-area normalisation: recorded time per this many square metres.
+PER_AREA = 100
 
 # One page per project: (theme.PAGES key, workbook tab prefix, page heading).
 # The tab label and file come from theme.PAGES.
@@ -37,6 +43,15 @@ SITES = [
 
 # Tabs that are not units on any page.
 EXCLUDE = {"Gems-E511B_old"}  # superseded by Gems-E511B
+
+# Units read from the workbook but not shown (another unit may borrow from
+# them), and not mentioned on the page.
+HIDDEN = {"Ibiza T244"}
+
+# A unit whose capture survey is the one logged on another tab:
+# {unit: tab it is logged on}. Per the pilot team, T242 was surveyed with
+# Matterport at the time logged on T244's tab, not with iGUIDE.
+CAPTURE_FROM = {"Ibiza T242": "Ibiza T244"}
 
 # Minutes within this of the row's own clock times are rounding, not flagged.
 ROUNDING = 2
@@ -59,15 +74,14 @@ UNLOGGED = "Start and end time not logged"
 UNTIMED = {"meps": 30}
 
 # Not in the sheet, and the same for every unit: (test, who, minutes, status,
-# note, counts towards the unit total). The flood test is the contractor's
-# time, so it is shown but kept out of the totals.
+# note, person whose activity it is part of). A test that is part of someone's
+# activity is added to it as a sub-task and counts towards their time; the
+# flood test is the contractor's, so it is shown but kept out of the totals.
 TESTS = [
-    ("Flood test", "Contractor", 30, "Done by contractor",
-     f"Results are incorporated during QA and MEP snagging. {UNLOGGED}.", False),
-    ("Static test", "", 20, "Completed", f"{UNLOGGED}.", True),
+    ("Flood test", "Contractor", 30, "Completed",
+     "Conducted by contractor, Verified by functional QA.", None),
+    ("Static test", "Functional QA", 20, "Completed", "Conducted by functional QA.", "qa"),
 ]
-COUNTED_TESTS = [t for t in TESTS if t[5]]
-TESTS_MIN = sum(t[2] for t in COUNTED_TESTS)
 
 STATE_TEXT = {"pending": "Activity pending", "separate": "Not recorded separately"}
 
@@ -244,6 +258,23 @@ def mark_repeats(units):
                     s["flags"].append(f"{', '.join(same)} logs the same times for {s['label']}.")
 
 
+def read_details(names):
+    """{unit: (floor area m², bedrooms)} from UNITS_PATH. A unit it does not
+    list simply has no details; a name it lists that is not a unit stops the
+    build, so a typo cannot quietly drop a unit's area."""
+    if not UNITS_PATH.exists():
+        return {}
+    out = {}
+    for row in csv.DictReader(UNITS_PATH.open(newline="", encoding="utf-8-sig")):
+        name = row["unit"].strip()
+        if name not in names:
+            raise SystemExit(f"{UNITS_PATH.name} lists {name!r}, which is not a unit in the "
+                             f"workbook ({', '.join(sorted(names))}).")
+        area, beds = row.get("floor_area_sqm", "").strip(), row.get("bedrooms", "").strip()
+        out[name] = (float(area) if area else None, int(beds) if beds else None)
+    return out
+
+
 def read_units():
     try:
         import openpyxl
@@ -254,13 +285,42 @@ def read_units():
     units = [read_unit(ws.title, ws, wbv[ws.title]) for ws in wb.worksheets
              if ws.title not in EXCLUDE and ws.sheet_state == "visible"]
     mark_repeats(units)
+    details = read_details({u["name"] for u in units})
     for u in units:
-        u["total_flags"] = check_totals(u)
+        u["area"], u["bedrooms"] = details.get(u["name"], (None, None))
+        u["total_flags"] = check_totals(u)  # against the tab as logged
         u["site"] = next((key for key, prefix, _ in SITES if u["name"].startswith(prefix)), None)
         if u["site"] is None:
             raise SystemExit(f"Workbook tab {u['name']!r} matches no project in SITES "
                              f"({', '.join(prefix for _, prefix, _ in SITES)}). "
                              f"Add one, or list the tab in EXCLUDE.")
+    by_name = {u["name"]: u for u in units}
+    for unit, tab in CAPTURE_FROM.items():
+        if unit not in by_name or tab not in by_name:
+            raise SystemExit(f"CAPTURE_FROM names {unit!r} <- {tab!r}, but the workbook has "
+                             f"no such unit.")
+        cap = next(a for a in by_name[tab]["activities"] if a["slot"] == "cap")
+        dst = by_name[unit]
+        dst["activities"] = sorted(
+            [a for a in dst["activities"] if a["slot"] != "cap"] + [dict(cap, logged_on=tab)],
+            key=lambda a: SLOTS.index(a["slot"]))
+    for u in units:
+        for label, _, minutes, _, note, slot in TESTS:
+            a = next((a for a in u["activities"] if a["slot"] == slot), None) if slot else None
+            if a is None:
+                continue
+            if a["other"] is None:  # no sub-tasks yet: what was logged becomes the rest
+                a["other"] = {"label": "Other functional", "state": a["state"],
+                              "minutes": a["minutes"], "flags": [], "within": []}
+            a["subs"] = a["subs"] + [{"label": label, "sheet_label": label, "state": "recorded",
+                                      "minutes": minutes, "sessions": [], "flags": [],
+                                      "untimed": True, "note": f"{note} {UNLOGGED}."}]
+            a.update(state="recorded", minutes=(a["minutes"] or 0) + minutes,
+                     includes=a.get("includes", []) + [(label, minutes)])
+    missing = HIDDEN - set(by_name)
+    if missing:
+        raise SystemExit(f"HIDDEN names {', '.join(sorted(missing))}, not a unit in the workbook.")
+    units = [u for u in units if u["name"] not in HIDDEN]
     # T240 before T241, wherever the tabs sit in the workbook
     units.sort(key=lambda u: [int(t) if t.isdigit() else t.lower()
                               for t in re.split(r"(\d+)", u["name"])])
@@ -293,8 +353,33 @@ def minutes_of(acts, slots):
 
 
 def unit_total(u):
-    """Everyone's minutes, plus the tests that count towards the total."""
-    return minutes_of(u["activities"], SLOTS) + TESTS_MIN
+    """Everyone's minutes, tests that are part of someone's activity included."""
+    return minutes_of(u["activities"], SLOTS)
+
+
+def per_area(mins, area):
+    """Minutes per PER_AREA m² of floor area, or None without an area."""
+    return round(mins * PER_AREA / area) if area else None
+
+
+def fmt_area(a):
+    return f"{a:,.0f} m&sup2;" if a == int(a) else f"{a:,.1f} m&sup2;"
+
+
+PER_LABEL = f"per {PER_AREA} m&sup2;"
+# for the uppercase tile labels, where m² must not become M²
+PER_KEY = f'Per {PER_AREA} <span class="u">m&sup2;</span>'
+
+
+def unit_facts(u, short=False):
+    """'290 m² · 6 bedrooms', or as much of it as is known."""
+    bits = []
+    if u["area"]:
+        bits.append(fmt_area(u["area"]))
+    if u["bedrooms"]:
+        bits.append(f'{u["bedrooms"]} bed' if short else
+                    f'{u["bedrooms"]} bedroom{"s" if u["bedrooms"] != 1 else ""}')
+    return " &middot; ".join(bits)
 
 
 def logged_times(unit):
@@ -366,8 +451,11 @@ def render_activity(unit, a, axis):
                 for x, y in s["sessions"]]
         subs.append(
             f'<div class="row sub"><div class="c-name"><span class="nm">{esc(s["label"])}</span></div>'
-            f'<div class="c-log mono">{fmt_windows(s["sessions"], "<br>") if s["sessions"] else "&mdash;"}</div>'
-            f'{time_cell(s)}{track(axis, bars, a["sessions"])}</div>')
+            + (f'<div class="c-log mono">{fmt_windows(s["sessions"], "<br>")}</div>' if s["sessions"]
+               else f'<div class="c-log none">{NONE}</div>')
+            + f'{time_cell(s)}'
+            + (track(axis, note=esc(s["note"])) if s.get("note") else track(axis, bars, a["sessions"]))
+            + '</div>')
     o = a["other"]
     within = (f'<span class="who">Includes {esc(", ".join(o["within"]).lower())}, '
               f'not recorded separately</span>' if o["within"] else "")
@@ -380,11 +468,15 @@ def render_activity(unit, a, axis):
             f'<div class="subs">{"".join(subs)}</div></details>')
 
 
-def render_tests(axis):
+def render_tests(u, axis):
     out = []
-    for label, who, minutes, status, note, counted in TESTS:
+    for label, who, minutes, status, note, slot in TESTS:
+        part_of = next((a["label"] for a in u["activities"] if a["slot"] == slot), None)
+        if part_of:
+            note = f"{note} Counted in {part_of} time."
+        note = f"{note} {UNLOGGED}."
         out.append(
-            f'<div class="act test{" counted" if counted else ""}"><div class="row">'
+            f'<div class="act test{f" part-of p-{slot}" if part_of else ""}"><div class="row">'
             f'<div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i>'
             f'<span class="nm"><b>{esc(label)}</b>'
             + (f'<span class="who">{esc(who)}</span>' if who else "") + '</span></div>'
@@ -408,12 +500,12 @@ def tile_sub(acts, slots):
     inside = [a for a in acts if a["slot"] in slots]
     if len(slots) == len(SLOTS):
         n = len({a["slot"] for a in inside if a["state"] == "recorded"})
-        tests = " + ".join(t[0].lower() for t in COUNTED_TESTS)
-        return (f"{n} {'person' if n == 1 else 'people'}, all activities"
-                + (f" + {tests}" if tests else ""))
+        return f"{n} {'person' if n == 1 else 'people'}, all activities"
     bits = []
     for a in inside:
         short = short_label(a)
+        if a.get("includes"):
+            short += ", incl. " + " and ".join(t.lower() for t, _ in a["includes"])
         if a["state"] == "recorded":
             bits.append(f'{esc(short)} {fmt_dur(a["minutes"])}' if len(inside) > 1 else esc(short))
         else:
@@ -434,6 +526,12 @@ def render_unit(u):
             v = fmt_dur(minutes_of(acts, slots))
         tiles.append(f'<div class="tile"><span class="k">{label}{warn([u["total_flags"][slots]]) if slots in u["total_flags"] else ""}</span>'
                      f'<span class="v mono">{v}</span><span class="s">{tile_sub(acts, slots)}</span></div>')
+    if u["area"]:
+        tiles.append(f'<div class="tile"><span class="k">{PER_KEY}</span>'
+                     f'<span class="v mono">{fmt_dur(per_area(unit_total(u), u["area"]))}</span>'
+                     f'<span class="s">recorded time over {fmt_area(u["area"])}</span></div>')
+    facts = unit_facts(u)
+    facts = f'<span class="ufacts">{facts}</span>' if facts else ""
 
     times = logged_times(u)
     cap = next((a for a in acts if a["slot"] == "cap"), None)
@@ -450,7 +548,7 @@ def render_unit(u):
     sub = sub[:1].upper() + sub[1:]
 
     lo, hi, ticks = axis
-    every = 2 if len(ticks) > 7 else 1  # a long day: gridline every hour, label every other
+    every = math.ceil(len(ticks) / 5)  # a gridline every step, but at most ~5 labels
     labels = "".join(
         f'<span style="left:{pos(t, axis):.3f}%"'
         + (' class="first"' if t == lo else ' class="last"' if t == hi else "")
@@ -459,10 +557,10 @@ def render_unit(u):
 <article class="card unit-card" id="u-{esc(u["slug"])}" data-unit="{esc(u["slug"])}">
   <div class="uhead">
     <div class="uname">
-      <h3>{esc(u["name"])}</h3>
+      <h3>{esc(u["name"])}</h3>{facts}
       <p class="usub">{sub}</p>
     </div>
-    <div class="tiles">{"".join(tiles)}</div>
+    <div class="tiles" style="--n:{len(tiles)}">{"".join(tiles)}</div>
   </div>
   <div class="acts">
     <div class="row head" aria-hidden="true">
@@ -472,65 +570,110 @@ def render_unit(u):
     </div>
     {"".join(render_activity(u, a, axis) for a in acts)}
     <div class="tests-head">Tests</div>
-    {render_tests(axis)}
+    {render_tests(u, axis)}
   </div>
 </article>"""
 
 
 def render_compare(units):
-    """Recorded time per unit, split by person. Bar length is comparable across
+    """Recorded time per unit, split by person, either as it stands or per
+    PER_AREA m² of floor area. Either way bar length is comparable across
     units; the card below each one breaks it down."""
+    sized = [u for u in units if u["area"]]
     totals = {u["slug"]: unit_total(u) for u in units}
+    norms = {u["slug"]: per_area(totals[u["slug"]], u["area"]) for u in units}
     peak = max(totals.values()) or 1
+    npeak = max((n for n in norms.values() if n), default=0) or 1
     names = dict(PEOPLE.values())
     labels = {}
     for u in units:
         for a in u["activities"]:
             labels.setdefault(a["slot"], a["label"] if a["slot"] != "cap" else "Capture")
 
+    def both(mins, area):
+        """The figure in each mode; only one shows at a time."""
+        n = per_area(mins, area)
+        return (f'<span class="v-abs">{fmt_dur(mins)}</span>'
+                f'<span class="v-area">{fmt_dur(n) if n is not None else "&mdash;"}</span>')
+
     rows = []
     for u in units:
         by = {a["slot"]: a for a in u["activities"]}
+
+        def tip(what, mins, extra=""):
+            n = per_area(mins, u["area"])
+            return esc(f'{u["name"]} · {what} · {fmt_dur(mins)}'
+                       + (f" ({fmt_dur(n)} per {PER_AREA} m\u00b2)" if n is not None else "")
+                       + extra)
+        def extra(a):
+            if a.get("untimed"):
+                return " · " + UNLOGGED.lower()
+            return "".join(f" · includes {t.lower()} {fmt_dur(m)} ({UNLOGGED.lower()})"
+                           for t, m in a.get("includes", []))
         segs = "".join(
-            f'<i class="p-{s}" style="flex:{by[s]["minutes"]}" title="{esc(u["name"])} · '
-            f'{esc(labels[s])} ({esc(names[s])}) · {fmt_dur(by[s]["minutes"])}'
-            f'{" · " + UNLOGGED.lower() if by[s].get("untimed") else ""}"></i>'
+            f'<i class="p-{s}" style="flex:{by[s]["minutes"]}" title="'
+            + tip(f"{labels[s]} ({names[s]})", by[s]["minutes"], extra(by[s]))
+            + '"></i>'
             for s in SLOTS if s in by and by[s]["state"] == "recorded")
-        segs += "".join(
-            f'<i class="p-test" style="flex:{m}" title="{esc(u["name"])} · {esc(t)} · '
-            f'{fmt_dur(m)} · {UNLOGGED.lower()}"></i>' for t, _, m, *_ in COUNTED_TESTS)
         notes = []
         for state, word in (("pending", "pending"), ("separate", "not recorded separately")):
             missing = [("capture" if s == "cap" else short_label(by[s]))
                        for s in SLOTS if s in by and by[s]["state"] == state]
             if missing:
                 notes.append(f'{" and ".join(missing)} {word}')
-        note = f'<span class="cmp-note">{esc("; ".join(notes))}</span>' if notes else ""
-        frac = totals[u["slug"]] / peak
+        note = esc("; ".join(notes))
+        if sized and not u["area"]:
+            note = (f'<span class="v-abs">{note}</span>'
+                    f'<span class="v-area">no floor area given</span>')
+        note = f'<span class="cmp-note">{note}</span>' if note else ""
+        n = norms[u["slug"]]
+        facts = unit_facts(u, short=True)
         rows.append(f"""
     <div class="cmp-row" data-unit="{esc(u["slug"])}">
-      <a class="cmp-u" href="#u-{esc(u["slug"])}">{esc(u["name"])}</a>
+      <a class="cmp-u" href="#u-{esc(u["slug"])}">{esc(u["name"])}"""
+                    + (f'<span class="cmp-facts">{facts}</span>' if facts else "") + f"""</a>
       <div class="cmp-track">
-        <div class="cmp-bar" style="--f:{frac:.4f}">{segs}</div>
-        <span class="cmp-lab mono">{fmt_dur(totals[u["slug"]])}</span>{note}
+        <div class="cmp-bar" style="--fa:{totals[u["slug"]] / peak:.4f};--fn:{(n or 0) / npeak:.4f}">{segs}</div>
+        <span class="cmp-lab mono">{both(totals[u["slug"]], u["area"])}</span>{note}
       </div>
     </div>""")
 
+    # per person across units; per area over the units that have one
+    area_sum = sum(u["area"] for u in sized)
+    def legend_value(mins_all, mins_sized):
+        n = round(mins_sized * PER_AREA / area_sum) if area_sum else None
+        return (f'<span class="v-abs">{fmt_dur(mins_all)}</span>'
+                f'<span class="v-area">{fmt_dur(n) if n is not None else "&mdash;"}</span>')
     legend = "".join(
         f'<span class="p-{s}"><i class="sw"></i>{esc(labels[s])} '
         + ("" if labels[s].startswith(names[s]) else f'<span class="lg-who">{esc(names[s])}</span> ')
-        + f'<b class="mono">{fmt_dur(sum(minutes_of(u["activities"], {s}) for u in units))}</b></span>'
+        + '<b class="mono">' + legend_value(sum(minutes_of(u["activities"], {s}) for u in units),
+                                            sum(minutes_of(u["activities"], {s}) for u in sized))
+        + '</b></span>'
         for s in SLOTS if s in labels)
-    legend += "".join(
-        f'<span class="p-test"><i class="sw"></i>{esc(t)} '
-        f'<b class="mono">{fmt_dur(m * len(units))}</b></span>' for t, _, m, *_ in COUNTED_TESTS)
+
+    folded = [(t[0].lower(), labels[t[5]]) for t in TESTS if t[5] in labels]
+    folded = "".join(f" {esc(part_of)} includes the {esc(t)}." for t, part_of in folded)
+    toggle = sub_area = ""
+    if sized:
+        toggle = f"""
+  <div class="modes" role="group" aria-label="Show recorded time as">
+    <button type="button" class="mode" data-mode="abs" aria-pressed="true">Total time</button>
+    <button type="button" class="mode" data-mode="area" aria-pressed="false">{PER_LABEL.capitalize()}</button>
+  </div>"""
+        sub_area = (f'<span class="v-area">The same minutes divided by each unit&rsquo;s floor area, as '
+                    f'time {PER_LABEL}, so units of different sizes compare. '
+                    + ("" if len(sized) == len(units) else "Units without a floor area have no bar. ")
+                    + "Unit names jump to the breakdown below.</span>")
     return f"""
-<section class="card" aria-labelledby="cmp-h">
-  <div class="card-head">
-    <h2 id="cmp-h">Recorded time by unit</h2>
-    <p class="card-sub">Minutes logged on site, split by the person who logged them, plus the
-    {" and ".join(t[0].lower() for t in COUNTED_TESTS)}. Bar length is comparable across units.
-    Unit names jump to the breakdown below.</p>
+<section class="card cmp-card" aria-labelledby="cmp-h">
+  <div class="card-head cmp-head">
+    <div>
+      <h2 id="cmp-h">Recorded time by unit</h2>
+      <p class="card-sub"><span class="v-abs">Minutes logged on site, split by the person who logged
+      them.{folded} Bar length is comparable across units. Unit names jump to the breakdown
+      below.</span>{sub_area}</p>
+    </div>{toggle}
   </div>
   <div class="legend">{legend}</div>
   <div class="cmp">{"".join(rows)}</div>
@@ -565,20 +708,26 @@ def render(site, units, everyone):
     many = len(units) > 1
     all_acts = [a for u in units for a in u["activities"]]
     total = sum(unit_total(u) for u in units)
+    sized = [u for u in units if u["area"]]
+    area = sum(u["area"] for u in sized)
     caps = [u for u in units if any(a["slot"] == "cap" and a["state"] == "recorded"
                                     for a in u["activities"])]
     strip = "".join(f'<div><span class="k">{k}</span><span class="v mono">{v}</span>'
                     f'<span class="s">{s}</span></div>' for k, v, s in [
         ("Units", str(len(units)),
          ", ".join(esc(re.sub(rf"^{re.escape(prefix)}[\s-]*", "", u["name"])) for u in units)),
-        ("Recorded time", fmt_dur(total),
-         "person-time on site, all units"
-         + "".join(f", {t[0].lower()} included" for t in COUNTED_TESTS)),
+        ("Recorded time", fmt_dur(total), "person-time on site, all units"),
         ("MEP", fmt_dur(minutes_of(all_acts, {"mepg", "meps"})), "general and specialist"),
-        ("QA", fmt_dur(minutes_of(all_acts, {"qa"})), "functional, sub-tasks included"),
+        ("QA", fmt_dur(minutes_of(all_acts, {"qa"})),
+         "functional, sub-tasks"
+         + "".join(f" and {t[0].lower()}" for t in TESTS if t[5] == "qa") + " included"),
         ("Capture", fmt_dur(minutes_of(all_acts, {"cap"})),
          f"{len(caps)} of {len(units)} units captured"),
-    ])
+    ] + ([(PER_KEY,
+           fmt_dur(round(sum(unit_total(u) for u in sized) * PER_AREA / area)),
+           f"recorded time over {fmt_area(area)}"
+           + ("" if len(sized) == len(units) else f", the {len(sized)} units with a floor area"))]
+         if sized else []))
 
     chips = "".join(
         f'<button class="chip" role="tab" aria-selected="false" data-f="{esc(u["slug"])}">'
@@ -597,7 +746,14 @@ def render(site, units, everyone):
   <button class="expand" type="button" id="expand" aria-pressed="false">Open all sub-tasks</button>
 </div>"""
     # one unit: its card's tiles are the summary, and a one-bar chart says nothing
-    summary = f'<div class="strip">{strip}</div>\n\n{render_compare(units)}' if many else ""
+    tiles = strip.count('<span class="k">')
+    summary = (f'<div class="strip{" six" if tiles == 6 else ""}">{strip}</div>\n\n'
+               f'{render_compare(units)}' if many else "")
+    per_note = (f"""<li><b>{PER_LABEL.capitalize()}</b> is a unit&rsquo;s recorded time divided by its
+      floor area, so units of different sizes compare. Switch the chart
+      between total time and {PER_LABEL} with the buttons above it. Floor areas and bedrooms come
+      from <span class="mono">data/{UNITS_PATH.name}</span>.</li>
+    """ if sized else "")
     skipped = sorted(t for t in EXCLUDE if t.startswith(prefix))
     skipped = (f"""
     <li>The workbook's {", ".join(f'<span class="mono">{esc(t)}</span>' for t in skipped)}
@@ -630,7 +786,7 @@ def render(site, units, everyone):
   --p-mepg:#cf7b26; --p-meps:#065da0; --p-qa:#a672cb; --p-cap:#1e7546;
 }}
 .p-mepg{{--pc:var(--p-mepg)}} .p-meps{{--pc:var(--p-meps)}}
-.p-qa{{--pc:var(--p-qa)}} .p-cap{{--pc:var(--p-cap)}} .p-test{{--pc:var(--muted)}}
+.p-qa{{--pc:var(--p-qa)}} .p-cap{{--pc:var(--p-cap)}}
 .sw{{display:block;width:10px;height:10px;border-radius:3px;background:var(--pc);flex:none}}
 
 .legend{{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12.4px;color:var(--ink2);margin-bottom:16px}}
@@ -640,10 +796,29 @@ def render(site, units, everyone):
 .cmp{{display:flex;flex-direction:column;gap:8px}}
 .cmp-row{{display:grid;grid-template-columns:104px 1fr;gap:14px;align-items:center;transition:opacity .15s}}
 .cmp-row.dim{{opacity:.35}}
-.cmp-u{{font-size:12.8px;font-weight:650;color:var(--ink);text-decoration:none}}
+.cmp-u{{font-size:12.8px;font-weight:650;color:var(--ink);text-decoration:none;display:flex;flex-direction:column}}
+.k .u{{text-transform:none}}
+/* six summary tiles: one row when wide, else even rows of three or two */
+.strip.six{{grid-template-columns:repeat(6,1fr)}}
+@media (max-width:1100px){{.strip.six{{grid-template-columns:repeat(3,1fr)}}}}
+@media (max-width:560px){{.strip.six{{grid-template-columns:repeat(2,1fr)}}}}
+.cmp-facts{{font-size:11px;font-weight:500;color:var(--muted);line-height:1.3}}
+.cmp-head{{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-start;justify-content:space-between}}
+.cmp-head>div:first-child{{flex:1 1 420px}}
+.modes{{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);flex:none}}
+.mode{{font:inherit;font-size:12.5px;padding:7px 12px;border:none;background:none;cursor:pointer;color:var(--ink2)}}
+.mode+.mode{{border-left:1px solid var(--line)}}
+.mode:hover{{background:var(--panel);color:var(--ink)}}
+.mode[aria-pressed="true"]{{background:var(--ink);color:#fff;font-weight:600}}
+.mode:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
+.cmp-card .v-area,.cmp-card.area .v-abs{{display:none}}
+.cmp-card.area .v-area{{display:inline}}
 .cmp-u:hover{{text-decoration:underline}}
 .cmp-track{{display:flex;align-items:center;gap:10px;min-width:0}}
-.cmp-bar{{display:flex;gap:2px;height:22px;flex:none;width:calc((100% - 250px) * var(--f))}}
+.cmp-bar{{display:flex;gap:2px;height:22px;flex:none;--f:var(--fa);width:calc((100% - 250px) * var(--f));
+  transition:width .25s ease}}
+.cmp-card.area .cmp-bar{{--f:var(--fn)}}
+@media (prefers-reduced-motion:reduce){{.cmp-bar{{transition:none}}}}
 .cmp-bar i{{display:block;background:var(--pc);min-width:2px}}
 .cmp-bar i:last-child{{border-radius:0 4px 4px 0}}
 .cmp-lab{{font-size:12.8px;font-weight:700;white-space:nowrap}}
@@ -667,10 +842,12 @@ def render(site, units, everyone):
 
 .uhead{{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;justify-content:space-between;
   padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:6px}}
-.uname h3{{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em}}
+.uname h3{{font-size:26px;margin:0;font-weight:700;letter-spacing:-.02em;display:inline-block;vertical-align:baseline}}
+.ufacts{{display:inline-block;margin-left:10px;vertical-align:4px;font-size:12px;font-weight:600;color:var(--ink2);
+  background:var(--panel);border:1px solid var(--line2);border-radius:999px;padding:2px 9px;white-space:nowrap}}
 .usub{{color:var(--ink2);font-size:12.8px;margin:5px 0 0}}
 .usub b{{color:var(--ink);font-weight:600}}
-.tiles{{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:9px;flex:0 1 600px}}
+.tiles{{display:grid;grid-template-columns:repeat(var(--n,4),minmax(104px,1fr));gap:9px;flex:0 1 calc(var(--n,4) * 150px)}}
 .tile{{background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:10px 12px}}
 .tile .k{{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
   color:var(--muted);font-weight:650;line-height:1.35}}
@@ -735,7 +912,7 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
 .act.test .row>div:not(.c-trk){{padding:8px 0}}
 .act.test .trk{{min-height:36px}}
 .sw-test{{background:none;border:1.5px solid var(--muted)}}
-.act.test.counted .sw-test{{background:var(--muted)}}
+.act.test.part-of .sw-test{{background:var(--pc);border-color:var(--pc)}}
 
 @media (max-width:860px){{
   .row{{grid-template-columns:1fr auto;grid-template-areas:"name time" "log log" "trk trk";gap:0 12px}}
@@ -788,11 +965,11 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
     <li>Where the sheet leaves <b>MEP specialist</b> blank, it is shown as
       {fmt_dur(UNTIMED["meps"])}, marked <i>{UNLOGGED.lower()}</i>. That time counts towards the
       unit's MEP and recorded time.</li>
-    <li><b>Flood test</b> was already conducted by the contractor on every unit
-      ({fmt_dur(TESTS[0][2])}); its results are incorporated during QA and MEP snagging. As the
-      contractor's time it is not part of the unit totals. The <b>static test</b> is completed
-      ({fmt_dur(TESTS[1][2])}) and counts towards each unit's recorded time. Neither has its start
-      and end time logged.</li>
+    {per_note}<li>The <b>flood test</b> ({fmt_dur(TESTS[0][2])}) was conducted by the contractor and
+      verified by functional QA on every unit. As the contractor's time it is not part of the unit
+      totals. The <b>static test</b> ({fmt_dur(TESTS[1][2])}) is conducted by functional QA, so its
+      time is part of QA functional &mdash; a sub-task in its dropdown &mdash; and of the unit's
+      recorded time. Neither has its start and end time logged.</li>
     <li>A <span class="warn">!</span> marks minutes that do not agree with the clock times logged beside
       them, or a sub-task logged outside its activity. Hover it for the detail. Differences of
       {ROUNDING} minutes or less are rounding and are not marked. Otherwise minutes are shown exactly
@@ -835,6 +1012,15 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
   }});
   window.addEventListener('hashchange', function(){{ apply(fromHash(), false); }});
   apply(fromHash(), false);
+
+  var card  = document.querySelector('.cmp-card');
+  var modes = Array.prototype.slice.call(document.querySelectorAll('.mode'));
+  modes.forEach(function(b){{
+    b.addEventListener('click', function(){{
+      card.classList.toggle('area', b.dataset.mode === 'area');
+      modes.forEach(function(m){{ m.setAttribute('aria-pressed', String(m === b)); }});
+    }});
+  }});
 
   var all = Array.prototype.slice.call(document.querySelectorAll('details.act'));
   var btn = document.getElementById('expand');

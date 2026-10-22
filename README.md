@@ -26,22 +26,33 @@ the page whose project its tab name starts with (`SITES` in
 `build_time_motion.py`). `Gems-E511B_old` is an earlier take of Gems-E511B and
 is skipped.
 
+Two corrections from the pilot team are applied at build time, so the workbook
+stays as logged: Ibiza T244 is hidden (`HIDDEN`), and T242's capture is the
+Matterport survey logged on T244's tab rather than the iGUIDE row on its own
+(`CAPTURE_FROM`). The check against each tab's own totals block runs on the
+tab as logged, before either correction.
+
 Each fill colour in the workbook is a different person, and the page keeps one
 colour per person: MEP inspector (MEP general), MEP specialist (above ceiling),
 QA inspector (QA functional), and capture (iGUIDE or Matterport).
 
 - **Recorded time by unit** — each unit's minutes, split by person (on a page
-  with more than one unit).
+  with more than one unit). A **Total time / Per 100 m²** switch redraws it
+  normalised to floor area, so units of different sizes compare.
+- **Unit details** — floor area and bedrooms beside each unit's name, and its
+  recorded time per 100 m², from `data/time-motion-units.csv` (the workbook
+  does not carry them). A unit missing from that file simply shows no details;
+  a name in it that is not a workbook tab stops the build.
 - **One card per unit** — every activity with its logged clock times, its
   minutes, and a timeline of the day. MEP general and QA functional open as a
   dropdown onto their sub-tasks (roof, yard; inside cupboard, tile tapping,
   roof) plus **Other functional**: the activity's minutes less its timed
   sub-tasks.
-- **Tests** on every unit: the flood test (30 min) was already conducted by
-  the contractor, with its results incorporated during QA and MEP snagging,
-  and stays out of the unit totals; the static test (20 min) is completed and
-  counts towards each unit's recorded time. Neither has start and end times
-  logged (`TESTS`).
+- **Tests** on every unit: the flood test (30 min) was conducted by the
+  contractor and verified by functional QA, and stays out of the unit totals;
+  the static test (20 min) is conducted by functional QA, so it is added to QA
+  functional as a sub-task and counts towards QA and the unit's recorded time.
+  Neither has start and end times logged (`TESTS`).
 
 A blank MEP specialist row is shown as 30 minutes, marked *Start and end time
 not logged*, and counts towards the unit's MEP and recorded time (`UNTIMED`);
@@ -104,6 +115,7 @@ needs `openpyxl`:
 pip install openpyxl
 cp "…/Damac snagging schedules - Activity logs.csv" data/activity-logs.csv
 cp "…/QAQC_TIme+motion.xlsx" data/qaqc-time-motion.xlsx
+# new units: add a line to data/time-motion-units.csv (unit,floor_area_sqm,bedrooms)
 python3 build.py
 git commit -am "Refresh" && git push
 ```
