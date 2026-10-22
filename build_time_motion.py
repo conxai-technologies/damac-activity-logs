@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Render data/qaqc-time-motion.xlsx into the pilot's time and motion pages:
-one page per project (Lagoons - Ibiza at index.html, Hills - Gems beside it).
+one page per project (Lagoons - Ibiza and Hills - Gems). Old links to these units
+(…/#Ibiza-T241 on the site root) are forwarded by index.html, the Review Stats page.
 
 The workbook has one tab per unit. Down each tab, one row per activity with its
 minutes and its clock times (HHMM, so 957 is 09:57). Each fill colour is a
@@ -73,15 +74,48 @@ UNLOGGED = "Start and end time not logged"
 # the unit's totals, and the row says its times were not logged.
 UNTIMED = {"meps": 30}
 
-# Not in the sheet, and the same for every unit: (test, who, minutes, status,
-# note, person whose activity it is part of). A test that is part of someone's
-# activity is added to it as a sub-task and counts towards their time; the
-# flood test is the contractor's, so it is shown but kept out of the totals.
+# Tests the sheet does not carry. part_of is the person whose activity a test
+# belongs to: it is added there as a sub-task and counts towards their time.
+# Without one (the flood test is the contractor's) it is shown but kept out of
+# the totals. A test has either flat minutes, for every unit or those in units,
+# or a logged start and end per unit, which give its minutes (man-hours) and
+# draw it on the unit's timeline with the activity it is part of.
 TESTS = [
-    ("Flood test", "Contractor", 30, "Completed",
-     "Conducted by contractor, Verified by functional QA.", None),
-    ("Static test", "Functional QA", 20, "Completed", "Conducted by functional QA.", "qa"),
+    dict(name="Flood test", who="Contractor", minutes=30, status="Completed",
+         note="Conducted by contractor, Verified by functional QA.", part_of=None),
+    dict(name="Static test", who="Functional QA", minutes=20, status="Completed",
+         note="Conducted by functional QA.", part_of="qa"),
+    dict(name="Drain check", who="MEP team", status="Completed",
+         note="Conducted by MEP team.", part_of="mepg",
+         logged={"Ibiza T240": ("11:21", "12:50"),     # logged on site
+                 "Ibiza T241": ("12:52", "13:52"),
+                 "Ibiza T242": ("13:57", "15:08")}),
 ]
+
+
+def applies(test, u):
+    if "logged" in test:
+        return u["name"] in test["logged"]
+    return not test.get("units") or u["name"] in test["units"]
+
+
+def test_time(test, u):
+    """(minutes, (start, end) in minutes past midnight, or None) for a test on this unit."""
+    if "logged" in test:
+        start, end = (int(h) * 60 + int(m) for h, m in
+                      (t.split(":") for t in test["logged"][u["name"]]))
+        return end - start, (start, end)
+    return test["minutes"], None
+
+
+def and_join(xs):
+    xs = list(xs)
+    return " and ".join(xs) if len(xs) < 3 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+def short_unit(name):
+    """'Ibiza T241' as 'T241', for lists of units on a page that is all one project."""
+    return re.sub(rf"^(?:{'|'.join(re.escape(p) for _, p, _ in SITES)})[\s-]*", "", name)
 
 STATE_TEXT = {"pending": "Activity pending", "separate": "Not recorded separately"}
 
@@ -304,19 +338,34 @@ def read_units():
         dst["activities"] = sorted(
             [a for a in dst["activities"] if a["slot"] != "cap"] + [dict(cap, logged_on=tab)],
             key=lambda a: SLOTS.index(a["slot"]))
+    for t in TESTS:
+        unknown = (t.get("units") or set(t.get("logged", {}))) - set(by_name)
+        if unknown:
+            raise SystemExit(f"TESTS lists {t['name']!r} for {', '.join(sorted(unknown))}, "
+                             f"not a unit in the workbook.")
+        for unit in t.get("logged", {}):
+            if test_time(t, by_name[unit])[0] <= 0:
+                raise SystemExit(f"TESTS: {t['name']!r} on {unit} ends before it starts.")
     for u in units:
-        for label, _, minutes, _, note, slot in TESTS:
+        for t in TESTS:
+            label, note, slot = t["name"], t["note"], t["part_of"]
             a = next((a for a in u["activities"] if a["slot"] == slot), None) if slot else None
-            if a is None:
+            if a is None or not applies(t, u):
                 continue
+            minutes, when = test_time(t, u)
             if a["other"] is None:  # no sub-tasks yet: what was logged becomes the rest
                 a["other"] = {"label": "Other functional", "state": a["state"],
                               "minutes": a["minutes"], "flags": [], "within": []}
-            a["subs"] = a["subs"] + [{"label": label, "sheet_label": label, "state": "recorded",
-                                      "minutes": minutes, "sessions": [], "flags": [],
-                                      "untimed": True, "note": f"{note} {UNLOGGED}."}]
+            test = {"label": label, "sheet_label": label, "state": "recorded",
+                    "minutes": minutes, "sessions": [], "flags": []}
+            if when:  # drawn with the activity it is part of
+                test["sessions"] = [when]
+                a["sessions"] = sorted(a["sessions"] + [when])
+            else:
+                test.update(untimed=True, note=f"{note} {UNLOGGED}.")
+            a["subs"] = a["subs"] + [test]
             a.update(state="recorded", minutes=(a["minutes"] or 0) + minutes,
-                     includes=a.get("includes", []) + [(label, minutes)])
+                     includes=a.get("includes", []) + [(label, minutes, when is None)])
     missing = HIDDEN - set(by_name)
     if missing:
         raise SystemExit(f"HIDDEN names {', '.join(sorted(missing))}, not a unit in the workbook.")
@@ -470,17 +519,24 @@ def render_activity(unit, a, axis):
 
 def render_tests(u, axis):
     out = []
-    for label, who, minutes, status, note, slot in TESTS:
+    for t in TESTS:
+        if not applies(t, u):
+            continue
+        label, who, status, note, slot = t["name"], t["who"], t["status"], t["note"], t["part_of"]
+        minutes, when = test_time(t, u)
         part_of = next((a["label"] for a in u["activities"] if a["slot"] == slot), None)
         if part_of:
             note = f"{note} Counted in {part_of} time."
-        note = f"{note} {UNLOGGED}."
+        if not when:
+            note = f"{note} {UNLOGGED}."
+        logged = (f'<div class="c-log mono">{fmt_windows([when])}</div>' if when
+                  else f'<div class="c-log none">{NONE}</div>')
         out.append(
             f'<div class="act test{f" part-of p-{slot}" if part_of else ""}"><div class="row">'
             f'<div class="c-name"><i class="chev-sp"></i><i class="sw sw-test"></i>'
             f'<span class="nm"><b>{esc(label)}</b>'
             + (f'<span class="who">{esc(who)}</span>' if who else "") + '</span></div>'
-            f'<div class="c-log none">{NONE}</div>'
+            + logged +
             f'<div class="c-time stack"><span class="mins mono">{fmt_dur(minutes)}</span>'
             f'<span class="st st-done">{esc(status)}</span></div>'
             f'{track(axis, note=esc(note))}</div></div>')
@@ -503,13 +559,14 @@ def tile_sub(acts, slots):
         return f"{n} {'person' if n == 1 else 'people'}, all activities"
     bits = []
     for a in inside:
-        short = short_label(a)
-        if a.get("includes"):
-            short += ", incl. " + " and ".join(t.lower() for t, _ in a["includes"])
-        if a["state"] == "recorded":
-            bits.append(f'{esc(short)} {fmt_dur(a["minutes"])}' if len(inside) > 1 else esc(short))
+        short = esc(short_label(a))
+        incl = and_join(t.lower() for t, *_ in a.get("includes", []))
+        if a["state"] == "recorded" and len(inside) > 1:
+            bits.append(f'{short} {fmt_dur(a["minutes"])}' + (f" incl. {incl}" if incl else ""))
+        elif a["state"] == "recorded":
+            bits.append(short + (f", incl. {incl}" if incl else ""))
         else:
-            bits.append(f'{esc(short)} {STATE_TEXT.get(a["state"], "").lower()}')
+            bits.append(f'{short} {STATE_TEXT.get(a["state"], "").lower()}')
     return " + ".join(bits) or "&mdash;"
 
 
@@ -533,19 +590,15 @@ def render_unit(u):
     facts = unit_facts(u)
     facts = f'<span class="ufacts">{facts}</span>' if facts else ""
 
-    times = logged_times(u)
     cap = next((a for a in acts if a["slot"] == "cap"), None)
     bits = []
     if cap:
         bits.append(f"capture on <b>{esc(short_label(cap))}</b>"
                     + (" &middot; pending" if cap["state"] == "pending" else ""))
-    if times:
-        bits.append(f"first to last logged activity <b>{fmt_clock(min(times))}&ndash;"
-                    f"{fmt_clock(max(times))}</b>")
-    else:
+    if not logged_times(u):
         bits.append("no activity logged yet")
     sub = " &middot; ".join(bits)
-    sub = sub[:1].upper() + sub[1:]
+    sub = f'<p class="usub">{sub[:1].upper() + sub[1:]}</p>' if sub else ""
 
     lo, hi, ticks = axis
     every = math.ceil(len(ticks) / 5)  # a gridline every step, but at most ~5 labels
@@ -558,7 +611,7 @@ def render_unit(u):
   <div class="uhead">
     <div class="uname">
       <h3>{esc(u["name"])}</h3>{facts}
-      <p class="usub">{sub}</p>
+      {sub}
     </div>
     <div class="tiles" style="--n:{len(tiles)}">{"".join(tiles)}</div>
   </div>
@@ -608,8 +661,9 @@ def render_compare(units):
         def extra(a):
             if a.get("untimed"):
                 return " · " + UNLOGGED.lower()
-            return "".join(f" · includes {t.lower()} {fmt_dur(m)} ({UNLOGGED.lower()})"
-                           for t, m in a.get("includes", []))
+            return "".join(f" · includes {t.lower()} {fmt_dur(m)}"
+                           + (f" ({UNLOGGED.lower()})" if untimed else "")
+                           for t, m, untimed in a.get("includes", []))
         segs = "".join(
             f'<i class="p-{s}" style="flex:{by[s]["minutes"]}" title="'
             + tip(f"{labels[s]} ({names[s]})", by[s]["minutes"], extra(by[s]))
@@ -652,8 +706,12 @@ def render_compare(units):
         + '</b></span>'
         for s in SLOTS if s in labels)
 
-    folded = [(t[0].lower(), labels[t[5]]) for t in TESTS if t[5] in labels]
-    folded = "".join(f" {esc(part_of)} includes the {esc(t)}." for t, part_of in folded)
+    folded = "".join(
+        f' {esc(labels[t["part_of"]])} includes the {esc(t["name"].lower())}'
+        + ("" if len(on) == len(units) else f' on {esc(and_join(short_unit(u["name"]) for u in on))}')
+        + "."
+        for t in TESTS if t["part_of"] in labels
+        for on in [[u for u in units if applies(t, u)]] if on)
     toggle = sub_area = ""
     if sized:
         toggle = f"""
@@ -684,30 +742,16 @@ def page_file(key):
     return next(f for slug, _, f in theme.PAGES if slug == key)
 
 
-def redirect(units, everyone):
-    """index.html used to be the activity log, so old links (…/#BL515) arrive
-    here. Send any hash this page does not know on to wherever it lives."""
-    if page_file(units[0]["site"]) != "index.html":
-        return ""
-    known = ",".join(f'"{u["slug"]}"' for u in units)
-    elsewhere = ",".join(f'"{u["slug"]}":"{page_file(u["site"])}"'
-                         for u in everyone if u["site"] != units[0]["site"])
-    return f"""<script>
-/* Links into the archived activity log used to land here (…/#BL515). Send them on. */
-(function(){{
-  var h = decodeURIComponent(location.hash.slice(1)).replace(/^u-/, '');
-  var elsewhere = {{{elsewhere}}};
-  if (h && [{known}].indexOf(h) < 0)
-    location.replace((elsewhere[h] || '{page_file("activity")}') + location.hash);
-}})();
-</script>"""
-
-
 def render(site, units, everyone):
     key, prefix, heading = site
     many = len(units) > 1
     all_acts = [a for u in units for a in u["activities"]]
     total = sum(unit_total(u) for u in units)
+    on_page = [t for t in TESTS if any(applies(t, u) for u in units)]
+
+    def included(slots):
+        """Tests on this page that are part of these people's activities."""
+        return [t["name"].lower() for t in on_page if t["part_of"] in slots]
     sized = [u for u in units if u["area"]]
     area = sum(u["area"] for u in sized)
     caps = [u for u in units if any(a["slot"] == "cap" and a["state"] == "recorded"
@@ -717,10 +761,11 @@ def render(site, units, everyone):
         ("Units", str(len(units)),
          ", ".join(esc(re.sub(rf"^{re.escape(prefix)}[\s-]*", "", u["name"])) for u in units)),
         ("Recorded time", fmt_dur(total), "person-time on site, all units"),
-        ("MEP", fmt_dur(minutes_of(all_acts, {"mepg", "meps"})), "general and specialist"),
+        ("MEP", fmt_dur(minutes_of(all_acts, {"mepg", "meps"})),
+         "general and specialist" + (f", {and_join(included({'mepg', 'meps'}))} included"
+                                     if included({"mepg", "meps"}) else "")),
         ("QA", fmt_dur(minutes_of(all_acts, {"qa"})),
-         "functional, sub-tasks"
-         + "".join(f" and {t[0].lower()}" for t in TESTS if t[5] == "qa") + " included"),
+         "functional, sub-tasks" + "".join(f" and {n}" for n in included({"qa"})) + " included"),
         ("Capture", fmt_dur(minutes_of(all_acts, {"cap"})),
          f"{len(caps)} of {len(units)} units captured"),
     ] + ([(PER_KEY,
@@ -754,6 +799,23 @@ def render(site, units, everyone):
       between total time and {PER_LABEL} with the buttons above it. Floor areas and bedrooms come
       from <span class="mono">data/{UNITS_PATH.name}</span>.</li>
     """ if sized else "")
+    labels = {a["slot"]: a["label"] for u in units for a in u["activities"]}
+    def test_sentence(t):
+        on = [u for u in units if applies(t, u)]
+        times = [test_time(t, u) for u in on]
+        if "logged" in t:
+            scope = (and_join(f'{short_unit(u["name"])} {fmt_dur(m)}' for u, (m, _) in zip(on, times))
+                     + ", from its logged start and end")
+        else:
+            scope = (fmt_dur(t["minutes"])
+                     + ("" if len(on) == len(units) else ", " + and_join(short_unit(u["name"]) for u in on))
+                     + ", " + UNLOGGED.lower())
+        out = f'The <b>{esc(t["name"].lower())}</b> ({esc(scope)}): {esc(t["note"][:1].lower() + t["note"][1:])} '
+        out += (f'Its time is part of {esc(labels[t["part_of"]])} &mdash; a sub-task in its dropdown '
+                f'&mdash; and of the unit&rsquo;s recorded time.' if t["part_of"] in labels
+                else "It is not part of the unit totals.")
+        return out
+    tests_note = " ".join(test_sentence(t) for t in on_page)
     skipped = sorted(t for t in EXCLUDE if t.startswith(prefix))
     skipped = (f"""
     <li>The workbook's {", ".join(f'<span class="mono">{esc(t)}</span>' for t in skipped)}
@@ -776,7 +838,6 @@ def render(site, units, everyone):
 <meta name="robots" content="noindex">
 <title>DAMAC snagging pilot &mdash; time and motion, {esc(heading)}</title>
 <meta name="description" content="Time and motion for each {esc(heading)} unit in the DAMAC x CONXAI snagging pilot.">
-{redirect(units, everyone)}
 <style>
 {theme.CHROME_CSS}
 
@@ -965,11 +1026,7 @@ summary.row:focus-visible{{outline:2px solid #1b6fc4;outline-offset:-2px}}
     <li>Where the sheet leaves <b>MEP specialist</b> blank, it is shown as
       {fmt_dur(UNTIMED["meps"])}, marked <i>{UNLOGGED.lower()}</i>. That time counts towards the
       unit's MEP and recorded time.</li>
-    {per_note}<li>The <b>flood test</b> ({fmt_dur(TESTS[0][2])}) was conducted by the contractor and
-      verified by functional QA on every unit. As the contractor's time it is not part of the unit
-      totals. The <b>static test</b> ({fmt_dur(TESTS[1][2])}) is conducted by functional QA, so its
-      time is part of QA functional &mdash; a sub-task in its dropdown &mdash; and of the unit's
-      recorded time. Neither has its start and end time logged.</li>
+    {per_note}<li><b>Tests</b> are not in the sheet. {tests_note}</li>
     <li>A <span class="warn">!</span> marks minutes that do not agree with the clock times logged beside
       them, or a sub-task logged outside its activity. Hover it for the detail. Differences of
       {ROUNDING} minutes or less are rounding and are not marked. Otherwise minutes are shown exactly

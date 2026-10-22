@@ -14,6 +14,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 import build_review
+import build_review_timelines
 import build_time_motion
 import theme
 from theme import GENERATED, esc
@@ -739,6 +740,7 @@ def main():
           f"for {len(units)} units: {', '.join(units)}")
     build_review.main()
     build_time_motion.main()
+    build_review_timelines.main()
 
 
 if __name__ == "__main__":

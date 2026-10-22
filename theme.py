@@ -1,7 +1,8 @@
 """Chrome shared by every page of the site: tokens, masthead, tabs, footer.
 
-build_time_motion.py (the two time and motion pages), build.py (Archived activities) and
-build_review.py (Review Stats) each render their own body from their own data,
+build_review_timelines.py (Review Stats, the landing page), build_time_motion.py (the two
+time and motion pages), build_review.py (Archived Review Stats) and build.py (Archived
+activities) each render their own body from their own data,
 but the frame around it lives here so the pages cannot drift apart.
 """
 
@@ -12,9 +13,10 @@ GENERATED = date.today()
 
 # The pages of the site, in tab order: (slug, label, file).
 PAGES = [
-    ("tm-ibiza", "Pilot time and motion Lagoons \u2013 Ibiza", "index.html"),
+    ("review-tl", "Review Stats", "index.html"),
+    ("tm-ibiza", "Pilot time and motion Lagoons \u2013 Ibiza", "time-motion-ibiza.html"),
     ("tm-gems", "Pilot time and motion Hills \u2013 Gems", "time-motion-gems.html"),
-    ("review", "Review Stats", "review-stats.html"),
+    ("review", "Archived Review Stats", "review-stats.html"),
     ("activity", "Archived activities", "activity-logs.html"),
 ]
 
