@@ -91,6 +91,113 @@ def flag(flags, key):
     return f'<span class="warn" tabindex="0" data-tip="{esc(tip)}">!</span>' if tip else ""
 
 
+# Page rules for the review stats layout: strip, scope, split bars, tables, meters and
+# worked examples. build_review_timelines.py renders its page with the same rules.
+PAGE_CSS = """/* ---------------------------------------------- the review stats page --- */
+.sec-head{margin:30px 0 14px}
+.after{margin:12px 0 0;font-size:12.6px;color:var(--ink2)}
+.between{margin:16px 0 12px;font-size:12.6px;color:var(--ink2);max-width:82ch}
+
+.scope-cols{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:24px;align-items:start}
+.prose{font-size:12.9px;color:var(--ink2);line-height:1.65;max-width:72ch}
+.prose p{margin:0 0 11px}
+.prose h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  font-weight:700;margin:16px 0 5px}
+.prose .lede{color:var(--ink);font-weight:600}
+.prose b{color:var(--ink);font-weight:650}
+.eq{display:inline-block;font-size:12.2px;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line2);border-radius:7px;padding:7px 11px;margin-top:2px}
+
+.legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12px;color:var(--ink2);margin-bottom:14px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend b{color:var(--ink);font-weight:700}
+.sw{display:block;width:11px;height:11px;border-radius:2px}
+.sw.deleted,.seg.deleted{background:var(--c-del)}
+.sw.changed,.seg.changed{background:var(--c-chg)}
+.sw.untouched,.seg.untouched{background:var(--c-count)}
+
+.chart{margin-bottom:2px}
+.srow{display:flex;align-items:center;gap:12px;padding:5px 0}
+.sunit{flex:0 0 64px;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none}
+.sunit:hover{text-decoration:underline}
+.strack{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
+.sbar{display:flex;gap:2px;height:18px;min-width:2px}
+.seg{display:block;min-width:3px}
+.seg:first-child{border-radius:4px 0 0 4px}
+.seg:last-child{border-radius:0 4px 4px 0}
+.slab{font-size:12px;color:var(--ink2);font-weight:600;flex:none}
+.sout{flex:0 0 172px;display:flex;justify-content:flex-end;gap:12px;font-size:12.5px;
+  font-weight:700}
+.sout .o{min-width:44px;text-align:right}
+.o.deleted{color:var(--c-del)} .o.changed{color:var(--c-chg)} .o.untouched{color:var(--c-count)}
+
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.tblwrap.narrow{max-width:560px}
+table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
+.dt th,.dt td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line2);
+  white-space:nowrap;vertical-align:top}
+.dt td.wrap{white-space:normal}
+.dt thead th{background:var(--panel);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink2);font-weight:700;border-bottom:1px solid var(--line)}
+.dt th.num,.dt td.num,.dt td.meter{text-align:right}
+.dt td.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.dt tbody th{font-weight:600;color:var(--ink)}
+.dt tbody tr:hover td{background:#fafbfa}
+.dt tfoot th,.dt tfoot td{background:var(--panel);font-weight:700;border-bottom:none;
+  border-top:1px solid var(--line)}
+.dt .sub{display:block;font-size:10.8px;font-weight:500;color:var(--muted);
+  font-family:ui-sans-serif,system-ui,sans-serif}
+.dt th.wide{min-width:132px}
+
+.meter{min-width:132px}
+.mtrack{display:block;height:8px;border-radius:4px;background:var(--surface);
+  border:1px solid var(--line2);overflow:hidden;margin-bottom:4px}
+.dt tfoot .mtrack{background:var(--surface)}
+.mtrack i{display:block;height:100%;background:var(--c-chg);border-radius:4px;min-width:2px}
+.mval{font-size:12.6px;font-weight:700}
+
+.exgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:20px}
+.card.ex{margin-bottom:0;padding:16px}
+.ex-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:13px}
+.ex-head h3{font-size:16px;margin:0;font-weight:700;letter-spacing:-.01em}
+.ex-tag{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--c-chg);background:#fdf5e6;border:1px solid #f0e0bd;border-radius:5px;
+  padding:2px 7px;flex:none}
+.ex-photo{display:block;border-radius:8px;overflow:hidden;border:1px solid var(--line2);
+  margin-bottom:13px;background:var(--panel)}
+.ex-photo img{display:block;width:100%;height:330px;object-fit:contain}
+.ex-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ex-side{border:1px solid var(--line2);border-radius:9px;padding:0 11px 10px;
+  border-top:3px solid var(--line);background:var(--panel)}
+.ex-side.is-ai{border-top-color:var(--c-count)}
+.ex-side.is-man{border-top-color:var(--c-chg);background:var(--surface)}
+.ex-side h4{font-size:11px;margin:0;padding:10px 0 8px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink2);border-bottom:1px solid var(--line2)}
+.ex-dl{margin:0}
+.ex-f{padding:7px 0;border-top:1px solid #f2f3f2}
+.ex-f:first-child{border-top:none}
+.ex-f dt{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  font-weight:650}
+.ex-f dd{margin:2px 0 0;font-size:12.4px;color:var(--ink2);line-height:1.45;white-space:normal}
+.ex-f.is-diff{margin:0 -11px;padding:7px 8px 7px 11px;border-left:3px solid var(--c-chg);
+  background:#fdf7ec}
+.ex-f.is-diff dd{color:var(--ink);font-weight:600}
+
+@media (max-width:900px){
+  .scope-cols{grid-template-columns:1fr}
+  .tblwrap.narrow{max-width:none}
+}
+@media (max-width:720px){
+  .srow{flex-wrap:wrap;gap:8px}
+  .sunit{flex:0 0 auto}
+  .sout{flex:0 0 auto;justify-content:flex-start}
+  .exgrid{grid-template-columns:1fr}
+  .ex-cols{grid-template-columns:1fr}
+}
+"""
+
+
 # --------------------------------------------------------------- rendering ---
 
 def render_scope(data, flags):
@@ -320,7 +427,7 @@ def render(data, flags):
     ])
 
     masthead = theme.masthead(
-        "review", "Review Stats",
+        "review", "Archived Review Stats",
         esc(data["lead"]),
         f"Source <b>{esc(data['source']['doc'])}</b><br>"
         f"Villas <b>{len(villas)}</b> &middot; Report dated "
@@ -333,113 +440,12 @@ def render(data, flags):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>DAMAC snagging pilot &mdash; review stats</title>
+<title>DAMAC snagging pilot &mdash; archived review stats</title>
 <meta name="description" content="What DAMAC's review deleted, changed and accepted across five villas.">
 <style>
 {theme.CHROME_CSS}
 
-/* ---------------------------------------------- the review stats page --- */
-.sec-head{{margin:30px 0 14px}}
-.after{{margin:12px 0 0;font-size:12.6px;color:var(--ink2)}}
-.between{{margin:16px 0 12px;font-size:12.6px;color:var(--ink2);max-width:82ch}}
-
-.scope-cols{{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:24px;align-items:start}}
-.prose{{font-size:12.9px;color:var(--ink2);line-height:1.65;max-width:72ch}}
-.prose p{{margin:0 0 11px}}
-.prose h3{{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
-  font-weight:700;margin:16px 0 5px}}
-.prose .lede{{color:var(--ink);font-weight:600}}
-.prose b{{color:var(--ink);font-weight:650}}
-.eq{{display:inline-block;font-size:12.2px;color:var(--ink);background:var(--panel);
-  border:1px solid var(--line2);border-radius:7px;padding:7px 11px;margin-top:2px}}
-
-.legend{{display:flex;flex-wrap:wrap;gap:18px;font-size:12px;color:var(--ink2);margin-bottom:14px}}
-.legend span{{display:flex;align-items:center;gap:6px}}
-.legend b{{color:var(--ink);font-weight:700}}
-.sw{{display:block;width:11px;height:11px;border-radius:2px}}
-.sw.deleted,.seg.deleted{{background:var(--c-del)}}
-.sw.changed,.seg.changed{{background:var(--c-chg)}}
-.sw.untouched,.seg.untouched{{background:var(--c-count)}}
-
-.chart{{margin-bottom:2px}}
-.srow{{display:flex;align-items:center;gap:12px;padding:5px 0}}
-.sunit{{flex:0 0 64px;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none}}
-.sunit:hover{{text-decoration:underline}}
-.strack{{flex:1;display:flex;align-items:center;gap:9px;min-width:0}}
-.sbar{{display:flex;gap:2px;height:18px;min-width:2px}}
-.seg{{display:block;min-width:3px}}
-.seg:first-child{{border-radius:4px 0 0 4px}}
-.seg:last-child{{border-radius:0 4px 4px 0}}
-.slab{{font-size:12px;color:var(--ink2);font-weight:600;flex:none}}
-.sout{{flex:0 0 172px;display:flex;justify-content:flex-end;gap:12px;font-size:12.5px;
-  font-weight:700}}
-.sout .o{{min-width:44px;text-align:right}}
-.o.deleted{{color:var(--c-del)}} .o.changed{{color:var(--c-chg)}} .o.untouched{{color:var(--c-count)}}
-
-.tblwrap{{overflow-x:auto;border:1px solid var(--line);border-radius:10px}}
-.tblwrap.narrow{{max-width:560px}}
-table.dt{{width:100%;border-collapse:collapse;font-size:12.6px}}
-.dt th,.dt td{{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line2);
-  white-space:nowrap;vertical-align:top}}
-.dt td.wrap{{white-space:normal}}
-.dt thead th{{background:var(--panel);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
-  color:var(--ink2);font-weight:700;border-bottom:1px solid var(--line)}}
-.dt th.num,.dt td.num,.dt td.meter{{text-align:right}}
-.dt td.num{{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
-.dt tbody th{{font-weight:600;color:var(--ink)}}
-.dt tbody tr:hover td{{background:#fafbfa}}
-.dt tfoot th,.dt tfoot td{{background:var(--panel);font-weight:700;border-bottom:none;
-  border-top:1px solid var(--line)}}
-.dt .sub{{display:block;font-size:10.8px;font-weight:500;color:var(--muted);
-  font-family:ui-sans-serif,system-ui,sans-serif}}
-.dt th.wide{{min-width:132px}}
-
-.meter{{min-width:132px}}
-.mtrack{{display:block;height:8px;border-radius:4px;background:var(--surface);
-  border:1px solid var(--line2);overflow:hidden;margin-bottom:4px}}
-.dt tfoot .mtrack{{background:var(--surface)}}
-.mtrack i{{display:block;height:100%;background:var(--c-chg);border-radius:4px;min-width:2px}}
-.mval{{font-size:12.6px;font-weight:700}}
-
-.exgrid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:20px}}
-.card.ex{{margin-bottom:0;padding:16px}}
-.ex-head{{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:13px}}
-.ex-head h3{{font-size:16px;margin:0;font-weight:700;letter-spacing:-.01em}}
-.ex-tag{{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-  color:var(--c-chg);background:#fdf5e6;border:1px solid #f0e0bd;border-radius:5px;
-  padding:2px 7px;flex:none}}
-.ex-photo{{display:block;border-radius:8px;overflow:hidden;border:1px solid var(--line2);
-  margin-bottom:13px;background:var(--panel)}}
-.ex-photo img{{display:block;width:100%;height:330px;object-fit:contain}}
-.ex-cols{{display:grid;grid-template-columns:1fr 1fr;gap:10px}}
-.ex-side{{border:1px solid var(--line2);border-radius:9px;padding:0 11px 10px;
-  border-top:3px solid var(--line);background:var(--panel)}}
-.ex-side.is-ai{{border-top-color:var(--c-count)}}
-.ex-side.is-man{{border-top-color:var(--c-chg);background:var(--surface)}}
-.ex-side h4{{font-size:11px;margin:0;padding:10px 0 8px;font-weight:700;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--ink2);border-bottom:1px solid var(--line2)}}
-.ex-dl{{margin:0}}
-.ex-f{{padding:7px 0;border-top:1px solid #f2f3f2}}
-.ex-f:first-child{{border-top:none}}
-.ex-f dt{{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
-  font-weight:650}}
-.ex-f dd{{margin:2px 0 0;font-size:12.4px;color:var(--ink2);line-height:1.45;white-space:normal}}
-.ex-f.is-diff{{margin:0 -11px;padding:7px 8px 7px 11px;border-left:3px solid var(--c-chg);
-  background:#fdf7ec}}
-.ex-f.is-diff dd{{color:var(--ink);font-weight:600}}
-
-@media (max-width:900px){{
-  .scope-cols{{grid-template-columns:1fr}}
-  .tblwrap.narrow{{max-width:none}}
-}}
-@media (max-width:720px){{
-  .srow{{flex-wrap:wrap;gap:8px}}
-  .sunit{{flex:0 0 auto}}
-  .sout{{flex:0 0 auto;justify-content:flex-start}}
-  .exgrid{{grid-template-columns:1fr}}
-  .ex-cols{{grid-template-columns:1fr}}
-}}
+{PAGE_CSS}
 </style>
 </head>
 <body>

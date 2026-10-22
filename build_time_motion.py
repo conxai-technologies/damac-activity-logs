@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Render data/qaqc-time-motion.xlsx into the pilot's time and motion pages:
-one page per project (Lagoons - Ibiza at index.html, Hills - Gems beside it).
+one page per project (Lagoons - Ibiza and Hills - Gems). Old links to these units
+(…/#Ibiza-T241 on the site root) are forwarded by index.html, the Review Stats page.
 
 The workbook has one tab per unit. Down each tab, one row per activity with its
 minutes and its clock times (HHMM, so 957 is 09:57). Each fill colour is a
@@ -741,25 +742,6 @@ def page_file(key):
     return next(f for slug, _, f in theme.PAGES if slug == key)
 
 
-def redirect(units, everyone):
-    """index.html used to be the activity log, so old links (…/#BL515) arrive
-    here. Send any hash this page does not know on to wherever it lives."""
-    if page_file(units[0]["site"]) != "index.html":
-        return ""
-    known = ",".join(f'"{u["slug"]}"' for u in units)
-    elsewhere = ",".join(f'"{u["slug"]}":"{page_file(u["site"])}"'
-                         for u in everyone if u["site"] != units[0]["site"])
-    return f"""<script>
-/* Links into the archived activity log used to land here (…/#BL515). Send them on. */
-(function(){{
-  var h = decodeURIComponent(location.hash.slice(1)).replace(/^u-/, '');
-  var elsewhere = {{{elsewhere}}};
-  if (h && [{known}].indexOf(h) < 0)
-    location.replace((elsewhere[h] || '{page_file("activity")}') + location.hash);
-}})();
-</script>"""
-
-
 def render(site, units, everyone):
     key, prefix, heading = site
     many = len(units) > 1
@@ -856,7 +838,6 @@ def render(site, units, everyone):
 <meta name="robots" content="noindex">
 <title>DAMAC snagging pilot &mdash; time and motion, {esc(heading)}</title>
 <meta name="description" content="Time and motion for each {esc(heading)} unit in the DAMAC x CONXAI snagging pilot.">
-{redirect(units, everyone)}
 <style>
 {theme.CHROME_CSS}
 
