@@ -21,7 +21,6 @@ Needs openpyxl (pip install openpyxl).
 import csv
 import math
 import re
-from datetime import datetime
 from pathlib import Path
 
 import theme
@@ -78,7 +77,8 @@ UNTIMED = {"meps": 30}
 # belongs to: it is added there as a sub-task and counts towards their time.
 # Without one (the flood test is the contractor's) it is shown but kept out of
 # the totals. A test has either flat minutes, for every unit or those in units,
-# or logged start and end times per unit, which give its minutes.
+# or a logged start and end per unit, which give its minutes (man-hours) and
+# draw it on the unit's timeline with the activity it is part of.
 TESTS = [
     dict(name="Flood test", who="Contractor", minutes=30, status="Completed",
          note="Conducted by contractor, Verified by functional QA.", part_of=None),
@@ -86,9 +86,9 @@ TESTS = [
          note="Conducted by functional QA.", part_of="qa"),
     dict(name="Drain check", who="MEP team", status="Completed",
          note="Conducted by MEP team.", part_of="mepg",
-         logged={"Ibiza T240": ("2026-10-22 11:21", "2026-10-22 12:50"),
-                 "Ibiza T241": ("2026-10-22 12:52", "2026-10-22 13:52"),
-                 "Ibiza T242": ("2026-10-22 13:57", "2026-10-22 15:08")}),
+         logged={"Ibiza T240": ("11:21", "12:50"),     # logged on site
+                 "Ibiza T241": ("12:52", "13:52"),
+                 "Ibiza T242": ("13:57", "15:08")}),
 ]
 
 
@@ -99,22 +99,12 @@ def applies(test, u):
 
 
 def test_time(test, u):
-    """(minutes, (start, end) or None) for a test on this unit."""
+    """(minutes, (start, end) in minutes past midnight, or None) for a test on this unit."""
     if "logged" in test:
-        start, end = (datetime.fromisoformat(x) for x in test["logged"][u["name"]])
-        return int((end - start).total_seconds() // 60), (start, end)
+        start, end = (int(h) * 60 + int(m) for h, m in
+                      (t.split(":") for t in test["logged"][u["name"]]))
+        return end - start, (start, end)
     return test["minutes"], None
-
-
-def fmt_when(when, sep=" "):
-    """'22 Oct' + sep + '11:21–12:50'."""
-    start, end = when
-    return f"{start:%-d %b}{sep}{start:%H:%M}&ndash;{end:%H:%M}"
-
-
-# Logged on a date of their own, so kept off a unit's timeline, which shows the
-# (undated) day the sheet logs.
-OFF_TIMELINE = "apart from the day above, so not drawn on its timeline"
 
 
 def and_join(xs):
@@ -352,8 +342,8 @@ def read_units():
         if unknown:
             raise SystemExit(f"TESTS lists {t['name']!r} for {', '.join(sorted(unknown))}, "
                              f"not a unit in the workbook.")
-        for unit, (start, end) in t.get("logged", {}).items():
-            if datetime.fromisoformat(end) <= datetime.fromisoformat(start):
+        for unit in t.get("logged", {}):
+            if test_time(t, by_name[unit])[0] <= 0:
                 raise SystemExit(f"TESTS: {t['name']!r} on {unit} ends before it starts.")
     for u in units:
         for t in TESTS:
@@ -367,8 +357,9 @@ def read_units():
                               "minutes": a["minutes"], "flags": [], "within": []}
             test = {"label": label, "sheet_label": label, "state": "recorded",
                     "minutes": minutes, "sessions": [], "flags": []}
-            if when:
-                test.update(when=when, note=f"{note} Logged on {when[0]:%-d %b %Y}, {OFF_TIMELINE}.")
+            if when:  # drawn with the activity it is part of
+                test["sessions"] = [when]
+                a["sessions"] = sorted(a["sessions"] + [when])
             else:
                 test.update(untimed=True, note=f"{note} {UNLOGGED}.")
             a["subs"] = a["subs"] + [test]
@@ -509,7 +500,6 @@ def render_activity(unit, a, axis):
         subs.append(
             f'<div class="row sub"><div class="c-name"><span class="nm">{esc(s["label"])}</span></div>'
             + (f'<div class="c-log mono">{fmt_windows(s["sessions"], "<br>")}</div>' if s["sessions"]
-               else f'<div class="c-log mono">{fmt_when(s["when"], "<br>")}</div>' if s.get("when")
                else f'<div class="c-log none">{NONE}</div>')
             + f'{time_cell(s)}'
             + (track(axis, note=esc(s["note"])) if s.get("note") else track(axis, bars, a["sessions"]))
@@ -536,9 +526,9 @@ def render_tests(u, axis):
         part_of = next((a["label"] for a in u["activities"] if a["slot"] == slot), None)
         if part_of:
             note = f"{note} Counted in {part_of} time."
-        note = (f"{note} Logged on {when[0]:%-d %b %Y}, {OFF_TIMELINE}." if when
-                else f"{note} {UNLOGGED}.")
-        logged = (f'<div class="c-log mono">{fmt_when(when, "<br>")}</div>' if when
+        if not when:
+            note = f"{note} {UNLOGGED}."
+        logged = (f'<div class="c-log mono">{fmt_windows([when])}</div>' if when
                   else f'<div class="c-log none">{NONE}</div>')
         out.append(
             f'<div class="act test{f" part-of p-{slot}" if part_of else ""}"><div class="row">'
@@ -836,9 +826,8 @@ def render(site, units, everyone):
         on = [u for u in units if applies(t, u)]
         times = [test_time(t, u) for u in on]
         if "logged" in t:
-            days = sorted({when[0].date() for _, when in times})
             scope = (and_join(f'{short_unit(u["name"])} {fmt_dur(m)}' for u, (m, _) in zip(on, times))
-                     + ", logged " + and_join(f"{d:%-d %b %Y}" for d in days))
+                     + ", from its logged start and end")
         else:
             scope = (fmt_dur(t["minutes"])
                      + ("" if len(on) == len(units) else ", " + and_join(short_unit(u["name"]) for u in on))
@@ -847,8 +836,6 @@ def render(site, units, everyone):
         out += (f'Its time is part of {esc(labels[t["part_of"]])} &mdash; a sub-task in its dropdown '
                 f'&mdash; and of the unit&rsquo;s recorded time.' if t["part_of"] in labels
                 else "It is not part of the unit totals.")
-        if "logged" in t:
-            out += " Being dated, it is not drawn on the unit timelines, which show the sheet&rsquo;s day."
         return out
     tests_note = " ".join(test_sentence(t) for t in on_page)
     skipped = sorted(t for t in EXCLUDE if t.startswith(prefix))

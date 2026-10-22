@@ -53,11 +53,10 @@ QA inspector (QA functional), and capture (iGUIDE or Matterport).
   contractor and verified by functional QA, and stays out of the unit totals;
   the static test (20 min, every unit, no times logged) is conducted by
   functional QA; the drain check is conducted by the MEP team on T240–T242,
-  its minutes taken from the start and end logged on 22 Oct 2026. The static
-  test and drain check are added as sub-tasks to QA functional and MEP
-  general, and count towards that person's time and the unit's recorded time.
-  Being dated, the drain check is listed with its date and times but not drawn
-  on the unit's timeline, which shows the undated day the workbook logs.
+  its minutes (man-hours) taken from the start and end logged on site. The
+  static test and drain check are added as sub-tasks to QA functional and MEP
+  general, and count towards that person's time and the unit's recorded time;
+  the drain check is drawn on the unit's timeline with MEP general.
 
 A blank MEP specialist row is shown as 30 minutes, marked *Start and end time
 not logged*, and counts towards the unit's MEP and recorded time (`UNTIMED`);
