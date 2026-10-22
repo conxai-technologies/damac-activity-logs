@@ -48,11 +48,13 @@ QA inspector (QA functional), and capture (iGUIDE or Matterport).
   dropdown onto their sub-tasks (roof, yard; inside cupboard, tile tapping,
   roof) plus **Other functional**: the activity's minutes less its timed
   sub-tasks.
-- **Tests** on every unit: the flood test (30 min) was conducted by the
-  contractor and verified by functional QA, and stays out of the unit totals;
-  the static test (20 min) is conducted by functional QA, so it is added to QA
-  functional as a sub-task and counts towards QA and the unit's recorded time.
-  Neither has start and end times logged (`TESTS`).
+- **Tests** (`TESTS`), none with start and end times logged: the flood test
+  (30 min, every unit) was conducted by the contractor and verified by
+  functional QA, and stays out of the unit totals; the static test (20 min,
+  every unit) is conducted by functional QA and the drain check (1 h 30 min,
+  T241–T243 only) by the MEP team. Those two are added as sub-tasks to QA
+  functional and MEP general, and count towards that person's time and the
+  unit's recorded time.
 
 A blank MEP specialist row is shown as 30 minutes, marked *Start and end time
 not logged*, and counts towards the unit's MEP and recorded time (`UNTIMED`);
