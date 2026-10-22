@@ -86,7 +86,7 @@ column head in the full log.
 
 ## Review Stats
 
-The landing page. What the review team (murad.mousa and Harikrishnan.A) did to
+The landing page. What the review team (MM and HA, shown by their initials) did to
 the AI-generated snags on Lagoons – Ibiza T240, T241, T242, T243, T245 and
 Hills – Gems E511B, read from each snag's **Timeline** in QA/QC. It is laid out
 like the archived review stats and shares its page rules (`PAGE_CSS` in

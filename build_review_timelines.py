@@ -9,7 +9,8 @@ rules it shares), with the review's own categories in place of edited fields.
 The JSON holds one row per snag and one row per categorised change. Each
 change is the snag field's net change, from its issued value to its final
 value, so edits that were later undone are already gone, and it is credited to
-whoever made the final edit. Only changes by the people in "tracked" are in it.
+whoever made the final edit. Only changes by the people in "tracked" are in it,
+who appear by their initials because the site is public.
 
 Every material snag gets exactly one outcome: deleted, changed (its
 description or type was edited, or it was switched to non-material), or no
@@ -121,7 +122,7 @@ def unit_link(u):
             f'title="Open {esc(u["label"])} in pilot time and motion">{esc(u["label"])}</a>')
 
 
-def render_scope(t):
+def render_scope(t, tracked):
     rows = "".join(f"""
       <tr><th class="mono">{esc(v["unit"]["label"])}</th>
         <td class="num">{num(v["snags"])}</td></tr>""" for v in t["rows"])
@@ -144,7 +145,7 @@ def render_scope(t):
     <div class="prose">
       <p class="lede">Every figure in this report is counted over the {num(T["snags"])} AI-generated material snags only. The {num(t["by_hand"])} snags added by hand are left out.</p>
       <h3>What each term means</h3>
-      <p>Every material snag has exactly one outcome: it was deleted, it was changed (its description or type was edited, or it was switched to non-material), or it had no change. Priority and trade changes are counted separately, so a snag whose only change was its priority or trade counts as no change. Only changes made by the review team (<b>murad.mousa</b> and <b>Harikrishnan.A</b>) count, and each snag is judged on where it ended up compared with how it was issued, so edits that were later undone do not count.</p>
+      <p>Every material snag has exactly one outcome: it was deleted, it was changed (its description or type was edited, or it was switched to non-material), or it had no change. Priority and trade changes are counted separately, so a snag whose only change was its priority or trade counts as no change. Only changes made by the review team ({" and ".join(f"<b>{esc(p)}</b>" for p in tracked)}) count, and each snag is judged on where it ended up compared with how it was issued, so edits that were later undone do not count.</p>
       <h3>The denominator</h3>
       <p>Every percentage in this report uses the same denominator: the <b>material snags issued for that unit</b>. That includes the {len(t["switched"])} snags the review switched to non-material. The other {num(len(t["nonmat"]) - len(t["switched"]))} non-material snags sit outside it.</p>
       <p class="eq mono">{num(T["deleted"])} deleted + {num(T["changed"])} changed + {num(T["none"])} no change
@@ -352,7 +353,7 @@ def render_examples(t, data):
                   "kind": "Non material" if "Material/non-material" in cats else "Material",
                   "description": after[1] if after else d["title"]}
         diff = [k for k in order if issued[k] != edited[k]]
-        who = next(iter(cats.values()))["by"].split("@")[0]
+        who = next(iter(cats.values()))["by"]
 
         def side(src, cls, title):
             rows = "".join(f'<div class="ex-f{" is-diff" if k in diff else ""}">'
@@ -442,7 +443,7 @@ def render(data):
 
 <div class="strip">{strip}</div>
 
-{render_scope(t)}
+{render_scope(t, data["tracked"])}
 
 {render_outcomes(t)}
 
