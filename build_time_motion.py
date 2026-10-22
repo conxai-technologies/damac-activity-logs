@@ -589,19 +589,15 @@ def render_unit(u):
     facts = unit_facts(u)
     facts = f'<span class="ufacts">{facts}</span>' if facts else ""
 
-    times = logged_times(u)
     cap = next((a for a in acts if a["slot"] == "cap"), None)
     bits = []
     if cap:
         bits.append(f"capture on <b>{esc(short_label(cap))}</b>"
                     + (" &middot; pending" if cap["state"] == "pending" else ""))
-    if times:
-        bits.append(f"first to last logged activity <b>{fmt_clock(min(times))}&ndash;"
-                    f"{fmt_clock(max(times))}</b>")
-    else:
+    if not logged_times(u):
         bits.append("no activity logged yet")
     sub = " &middot; ".join(bits)
-    sub = sub[:1].upper() + sub[1:]
+    sub = f'<p class="usub">{sub[:1].upper() + sub[1:]}</p>' if sub else ""
 
     lo, hi, ticks = axis
     every = math.ceil(len(ticks) / 5)  # a gridline every step, but at most ~5 labels
@@ -614,7 +610,7 @@ def render_unit(u):
   <div class="uhead">
     <div class="uname">
       <h3>{esc(u["name"])}</h3>{facts}
-      <p class="usub">{sub}</p>
+      {sub}
     </div>
     <div class="tiles" style="--n:{len(tiles)}">{"".join(tiles)}</div>
   </div>
