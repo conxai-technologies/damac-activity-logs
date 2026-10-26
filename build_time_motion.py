@@ -89,7 +89,9 @@ TESTS = [
          note="Conducted by MEP team.", part_of="mepg",
          logged={"Ibiza T240": ("11:21", "12:50"),     # logged on site
                  "Ibiza T241": ("12:52", "13:52"),
-                 "Ibiza T242": ("13:57", "15:08")}),
+                 "Ibiza T242": ("13:57", "15:08"),
+                 "Ibiza T243": ("13:01", "14:15"),
+                 "Ibiza T245": ("09:20", "11:43")}),
 ]
 
 
