@@ -2,7 +2,7 @@
 """Render data/review-timelines.json into index.html, the site's landing page.
 
 What the review team did to the AI-generated snags on Lagoons - Ibiza
-(T240-T245) and Hills - Gems (E511B), read from each snag's Timeline in QA/QC.
+(T240-T245) and Hills - Gems (E511B), read from each snag's change history in QA/QC.
 It is laid out like the archived Review Stats page (build_review.py, whose page
 rules it shares), with the review's own categories in place of edited fields.
 
@@ -373,7 +373,7 @@ def render_examples(t, data):
     return f"""
 <div class="card-head sec-head">
   <h2>Example changes</h2>
-  <p class="card-sub">One snag for each type of edit, read from its timeline: the snag as issued beside where the review left it. The edited fields are marked on both sides.</p>
+  <p class="card-sub">One snag for each type of edit, read from its change history: the snag as issued beside where the review left it. The edited fields are marked on both sides.</p>
 </div>
 <div class="exgrid">{"".join(cards)}</div>"""
 
@@ -423,7 +423,7 @@ def render(data):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>DAMAC snagging pilot &mdash; review stats</title>
-<meta name="description" content="What the review deleted and changed across Ibiza T240&ndash;T245 and Hills Gems E511B, from each snag's timeline.">
+<meta name="description" content="What the review deleted and changed across Ibiza T240&ndash;T245 and Hills Gems E511B, from each snag's change history.">
 {forward_old_links()}
 <style>
 {theme.CHROME_CSS}
