@@ -13,6 +13,7 @@ from collections import Counter
 from datetime import date, datetime
 from pathlib import Path
 
+import build_performance_review
 import build_review
 import build_review_timelines
 import build_time_motion
@@ -741,6 +742,7 @@ def main():
     build_review.main()
     build_time_motion.main()
     build_review_timelines.main()
+    build_performance_review.main()
 
 
 if __name__ == "__main__":

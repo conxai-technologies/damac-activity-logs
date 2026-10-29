@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DAMAC snagging pilot &mdash; performance review</title>
+<meta name="description" content="Performance analysis of AI on visual snags: onsite snags beside the AI snags on the ConXAI dashboard.">
+<style>
+
+:root{
+  --page:#eef0ee; --surface:#ffffff; --panel:#f7f8f7;
+  --ink:#14171a; --ink2:#4d545c; --muted:#858d95;
+  --line:#dcdfdc; --line2:#eaece9;
+  --c-qa:#8a5cc4; --c-mep:#2f6ea8; --c-cap:#2f6f4f; --c-proc:#c98a1e;
+  --warn:#a2373f;
+  /* chart hues, validated as a categorical set against the light surface */
+  --c-count:#2f6ea8; --c-del:#a2373f; --c-chg:#a8720f;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--page);color:var(--ink);
+  font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,"Roboto Mono",monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:34px 22px 90px}
+
+.top{padding-bottom:0;border-bottom:2px solid var(--ink);margin-bottom:22px}
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.brand-logos{display:flex;justify-content:flex-end;align-items:center;gap:18px}
+.brand-logos img{display:block;width:auto;max-width:260px;height:auto;max-height:40px;object-fit:contain}
+.brand-logos img[alt="DAMAC"]{max-height:16px}
+.conxai-logo{display:block;width:auto;max-width:190px;height:auto;max-height:52px;object-fit:contain}
+.top-inner{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;justify-content:space-between}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  font-weight:700;margin:0 0 7px}
+h1{font-size:34px;line-height:1.05;margin:0;letter-spacing:-.02em;font-weight:680}
+.subline{color:var(--ink2);font-size:13.5px;margin:9px 0 0;max-width:60ch}
+.provenance{text-align:right;font-size:12px;color:var(--muted);line-height:1.75;flex:none}
+.provenance b{color:var(--ink2);font-weight:600}
+
+.tabs{display:flex;gap:2px;margin:18px 0 -2px}
+.tab{display:block;padding:9px 16px 10px;font-size:13.5px;font-weight:600;color:var(--ink2);
+  text-decoration:none;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;
+  position:relative;top:2px}
+.tab:hover{color:var(--ink);background:rgba(255,255,255,.6)}
+.tab[aria-current="page"]{background:var(--surface);color:var(--ink);border-color:var(--ink);
+  border-bottom:2px solid var(--surface)}
+.tab:focus-visible{outline:2px solid #1b6fc4;outline-offset:-2px}
+
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  margin-bottom:26px}
+.strip>div{background:var(--surface);padding:14px 16px}
+.strip .k{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);font-weight:650;line-height:1.35}
+.strip .v{display:block;font-size:21px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.strip .v .sm{font-size:14.5px;letter-spacing:-.01em;white-space:nowrap}
+.strip .s{display:block;font-size:11.6px;color:var(--ink2);margin-top:3px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;
+  margin-bottom:20px}
+.card-head{margin-bottom:14px}
+h2{font-size:17px;margin:0;letter-spacing:-.01em;font-weight:670}
+.card-sub{color:var(--ink2);font-size:12.8px;margin:5px 0 0}
+
+.warn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  margin-left:5px;border-radius:50%;background:var(--warn);color:#fff;font-size:9.5px;
+  font-weight:800;vertical-align:middle;cursor:help;position:relative}
+.warn:not([data-tip]){cursor:default}
+.warn[data-tip]:hover::after,.warn[data-tip]:focus::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);
+  left:50%;transform:translateX(-50%);width:max-content;max-width:250px;text-align:left;
+  background:var(--ink);color:#fff;font-size:11.5px;font-weight:400;line-height:1.45;
+  padding:8px 10px;border-radius:7px;z-index:20;pointer-events:none}
+
+.notes{margin-top:26px;font-size:12.4px;color:var(--ink2);line-height:1.75}
+.notes h2{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  margin:0 0 8px;font-weight:700}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin-bottom:6px}
+.foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:11.8px;color:var(--muted);line-height:1.7}
+.foot a{color:var(--ink2)}
+
+@media (max-width:960px){
+  /* too narrow for folder tabs side by side: wrap them as one-line pills */
+  .tabs{flex-wrap:wrap;gap:6px;margin:14px 0 14px}
+  .tab{padding:7px 12px;font-size:12.5px;white-space:nowrap;top:0;
+    border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  .tab[aria-current="page"]{background:var(--ink);color:#fff;border:1px solid var(--ink)}
+}
+@media (max-width:720px){
+  .wrap{padding:24px 15px 70px}
+  h1{font-size:27px}
+  .provenance{text-align:left}
+  .brand-logos img[alt="DAMAC"]{max-height:14px}
+  .conxai-logo{max-width:140px}
+}
+@media print{
+  body{background:#fff} .tabs{display:none} .card{break-inside:avoid}
+}
+
+
+:root{--high:#d03b3b;--med:#ef8f2c;--low:#3b82d0;--yes:#17914a;--no:#cf3232;
+  --both:#2f6f4f;--man:#8a5cc4;--ai:#2f6ea8;--focus:#1b6fc4}
+.wrap{max-width:1900px}
+.top h1 .mono{font-weight:700}
+.top .subline{font-size:17px;font-weight:500}
+.unitnav{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin-top:6px}
+.unitnav a{font-size:13px;font-weight:650;text-decoration:none;color:var(--ink2);border:1px solid var(--line);
+  background:var(--surface);border-radius:999px;padding:5px 13px;line-height:1.4}
+.unitnav a:hover{border-color:var(--ink2);color:var(--ink)}
+.unitnav a[aria-current="page"]{background:var(--ink);border-color:var(--ink);color:#fff}
+section{margin-bottom:26px}
+section>h2{margin:0 0 14px}
+.h2sub{font-weight:500;color:var(--muted)}
+.card>.gloss{margin:0}
+
+.statgrid{display:grid;gap:18px;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}
+ul.stats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ul.stats li{display:flex;gap:14px;align-items:baseline;padding:9px 0;border-top:1px solid var(--line2)}
+ul.stats li:first-child{border-top:none;padding-top:0}
+.n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:23px;font-weight:700;
+  letter-spacing:-.02em;min-width:58px;text-align:right;flex:none}
+.lb{font-size:13.5px;color:var(--ink2)}
+.qual{display:block;color:var(--muted);font-size:12.2px;margin-top:3px;line-height:1.5}
+.qual b{color:var(--ink2)}
+.bars{display:flex;flex-direction:column;gap:18px}
+.bar .bh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;margin-bottom:7px}
+.bar .bt{font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--ink2)}
+.bar .bn{font-size:13px;color:var(--ink2)}
+.bar .bn b{color:var(--ink);font-family:ui-monospace,monospace}
+.seg{display:flex;height:34px;border-radius:7px;overflow:hidden;gap:2px;margin:0 0 8px}
+.seg i{display:flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-size:12px;min-width:26px}
+.seg b{font-family:ui-monospace,monospace;font-weight:700}
+.key{display:flex;flex-wrap:wrap;gap:12px;font-size:12.2px;color:var(--ink2)}
+.key span{display:flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:3px;flex:none}
+.s-both{background:var(--both)}.s-notcov{background:var(--man)}.s-del{background:#8d949b}.s-add{background:var(--ai)}
+.s-add-nm{background:repeating-linear-gradient(135deg,#6f9ccb 0 6px,#5a8bbf 6px 12px)}
+.mini>div{background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:11px 13px}
+.mini .k,.mini .v,.mini .s{display:block}
+.mini .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:650}
+.mini .v{font-family:ui-monospace,monospace;font-size:21px;font-weight:700;letter-spacing:-.02em;margin-top:3px}
+.mini .s{font-size:11.5px;color:var(--ink2)}
+.statnote{font-size:11.8px;color:var(--muted);line-height:1.5;margin:0}
+.statnote b{color:var(--ink2);font-weight:600}
+
+.gloss{list-style:none;margin:0;padding:0}
+.gloss li{padding:11px 0;border-top:1px solid var(--line2);font-size:13.2px;color:var(--ink2);line-height:1.55}
+.gloss li:first-child{border-top:none;padding-top:0}
+.gloss b{color:var(--ink);font-weight:650}
+
+.controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:12px}
+button,input,select{font:inherit}
+input[type=search],select{font-size:13px;padding:8px 11px;border:1px solid var(--line);
+  border-radius:8px;background:var(--surface);color:var(--ink)}
+input[type=search]{min-width:230px;flex:1 1 230px}
+.chips{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.chip{font:inherit;font-size:12.5px;padding:8px 13px;border:none;background:none;cursor:pointer;
+  color:var(--ink2);border-right:1px solid var(--line)}
+.chip:last-child{border-right:none}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:600}
+.count{font-size:12.5px;color:var(--muted);margin-left:auto}
+label.tog{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2);cursor:pointer}
+
+.tablewrap{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:auto}
+.tablewrap table{width:100%;border-collapse:collapse;table-layout:fixed}
+.tablewrap thead th{position:sticky;top:0;z-index:3;background:var(--panel);text-align:left;
+  font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);font-weight:700;
+  padding:12px 13px;border-bottom:1px solid var(--line)}
+thead th .h2l{display:block;font-size:11px;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:500;margin-top:3px}
+col.w-snag{width:16%} col.w-trade{width:6%} col.w-pic{width:10%} col.w-man{width:16%} col.w-ai-pic{width:10%} col.w-ai-desc{width:17%}
+#tb td{padding:13px;border-bottom:1px solid var(--line2);vertical-align:top;font-size:13.2px}
+#tb tr:last-child td{border-bottom:none}
+#tb tr:hover{background:#fafbfa}
+#tb tr td:first-child{border-left:4px solid transparent}
+#tb tr{content-visibility:auto;contain-intrinsic-size:auto 170px}
+#tb tr.r-manual td:first-child{border-left-color:var(--man)}
+#tb tr.r-ai-only td{background:#fbfbfe}
+#tb tr.r-ai-only td:first-child{border-left-color:var(--ai)}
+.c-man,.c-ai-pic{border-left:1px solid var(--line2)}
+.badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;padding:2px 7px;border-radius:5px;color:#fff;margin-bottom:6px}
+.b-man{background:var(--man)} .b-ai{background:var(--ai)}
+.lv{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:2px 7px;border-radius:5px;margin:0 0 6px 4px}
+.lv-certain{background:#e5f5e9;color:#1c7c3a}.lv-likely{background:#fdf3dc;color:#93690a}.lv-none{background:#fbe4e4;color:#b3261e}
+.c-snag .t{margin:0;font-weight:600;line-height:1.35}
+.c-snag .meta{margin:4px 0 0;font-size:11.8px;color:var(--muted)}
+.c-snag .sep{opacity:.5;padding:0 2px}
+.c-trade{color:var(--ink2)}
+.pic-list{display:grid;grid-template-columns:repeat(2,72px);gap:5px;align-content:flex-start}
+.th{position:relative;display:inline-block;width:72px;height:72px;padding:0;margin:0;
+  border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel);cursor:zoom-in}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .src{position:absolute;left:0;bottom:0;font-size:8.5px;font-weight:700;line-height:1;
+  padding:2px 3px;color:#fff;border-radius:0 5px 0 0}
+.src.m{background:rgba(20,23,26,.8)} .src.a{background:var(--ai)}
+.sig{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.det{font-size:14px;font-weight:800;line-height:1;width:19px;height:19px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.det.yes{background:var(--yes)}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.p-high{background:var(--high)} .p-med{background:var(--med)} .p-low{background:var(--low)}
+.plab{font-size:11.5px;color:var(--ink2);font-weight:600}
+.c-man .d{margin:0;line-height:1.45}
+.c-ai-desc .d{font-size:12.8px;color:var(--ink2);margin:0 0 6px}
+.d.meta{color:var(--muted)}
+body.clamp .c-man .d,body.clamp .c-ai-desc .d{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.c-ai-desc .one+.one{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line2)}
+.c-ai-desc .sev{font-size:11.5px;color:var(--muted);margin-left:2px}
+.aid{display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;padding:1px 7px;
+  border-radius:5px;background:#e8eef6;color:#244f7a;margin:0 6px 4px 0}
+.aid.none{background:#f1f2f3;color:var(--muted);font-weight:600;font-family:inherit}
+.del,.nm{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;
+  border-radius:5px;margin:0 6px 4px 0}
+.del{background:#fbe4e4;color:#b3261e}
+.nm{background:#f0e9fb;color:#5c34a0}
+.nm.mt{background:#dff2ef;color:#13665e}
+.mrg{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:#fdf3dc;color:#93690a;margin-bottom:6px}
+.empty{padding:44px;text-align:center;color:var(--muted);font-size:14px}
+
+dialog#lb{border:none;padding:0;background:#111417;width:94vw;height:94vh;max-width:94vw;
+  max-height:94vh;border-radius:10px;overflow:hidden;color:#fff}
+dialog#lb::backdrop{background:rgba(8,10,12,.86)}
+.lbbar{height:48px;display:flex;align-items:center;gap:8px;padding:7px 9px 7px 13px;
+  background:#20252a;border-bottom:1px solid #353b41}
+.lbbar .lbname{font-size:12px;color:#c7ccd0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:auto}
+dialog#lb button{background:#fff;border:none;border-radius:7px;padding:6px 10px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.lbview{width:100%;height:calc(94vh - 48px);overflow:auto;display:grid;place-items:center;padding:16px}
+dialog#lb img{max-width:100%;max-height:calc(94vh - 80px);display:block;cursor:zoom-in}
+dialog#lb img.actual{max-width:none;max-height:none;cursor:zoom-out}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.tablescroll{overflow-x:auto}
+.cmp{width:100%;border-collapse:collapse;font-size:13px}
+.cmp thead th{background:var(--panel);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.cmp thead th:first-child{text-align:left}
+.cmp tbody td{padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+.cmp tbody tr:last-child td{border-bottom:none}
+.cmp td.num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;text-align:right;white-space:nowrap}
+.cmp td.num .sub{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px}
+.cmp .rl a{color:var(--ink)}
+
+@media (min-width:1361px){.tablewrap table{min-width:1320px}}
+@media (max-width:1360px){
+  .statgrid{grid-template-columns:1fr}
+  .tablewrap table,.tablewrap thead,#tb,#tb tr,#tb td{display:block;width:100%}
+  .tablewrap thead{display:none}
+  #tb tr{border-bottom:1px solid var(--line);padding:6px 0}
+  #tb td{border-bottom:none;padding:8px 13px}
+  .c-man,.c-ai-pic{border-left:none}
+  .c-man:not(:empty)::before,.c-ai-pic:not(:empty)::before,.c-ai-desc::before{display:block;font-size:10px;letter-spacing:.08em;
+    color:var(--muted);font-weight:700;margin-bottom:5px}
+  .c-man:not(:empty)::before{content:"MANUAL"}
+  .c-ai-pic:not(:empty)::before{content:"AI PICTURES"}
+  .c-ai-desc::before{content:"AI DESCRIPTION"}
+}
+@media (max-width:720px){.unitnav{justify-content:flex-start}}
+@media print{.controls{display:none} #tb tr{content-visibility:visible;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="brand-row">
+    <div class="brand-logos" aria-label="Project and technology logos">
+      <img src="assets/damac.png" alt="DAMAC">
+    </div>
+    <img class="conxai-logo" src="assets/conxai.png" alt="Conxai">
+  </div>
+  <div class="top-inner">
+    <div>
+      <p class="eyebrow">DAMAC &times; CONXAI snagging pilot</p>
+      <h1>Performance review</h1>
+      <p class="subline">Performance analysis of AI on visual snags</p>
+    </div>
+    <div class="provenance"><nav class="unitnav" aria-label="Select unit"><a href="performance-review.html" aria-current="page">All units</a><a href="performance-review-t240.html">T240</a><a href="performance-review-t242.html">T242</a><a href="performance-review-t243.html">T243</a><a href="performance-review-t245.html">T245</a></nav></div>
+  </div>
+  <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html">Review Stats</a><a class="tab" href="time-motion-ibiza.html">Pilot time and motion Lagoons – Ibiza</a><a class="tab" href="time-motion-gems.html">Pilot time and motion Hills – Gems</a><a class="tab" href="performance-review.html" aria-current="page">Performance review</a><a class="tab" href="review-stats.html">Archived Review Stats</a><a class="tab" href="activity-logs.html">Archived activities</a></nav>
+</header>
+
+<div class="strip"><div><span class="k">Units</span><span class="v mono">4</span><span class="s">T240, T242, T243, T245</span></div><div><span class="k">Manual snags</span><span class="v mono">732</span><span class="s">target visual snags within the area captured</span></div><div><span class="k">Covered by AI</span><span class="v mono">664</span><span class="s">91% of manual snags</span></div><div><span class="k">Recall</span><span class="v mono">86%</span><span class="s">632 of 732</span></div><div><span class="k">AI snags</span><span class="v mono">1972</span><span class="s">on the ConXAI dashboard (roof excluded)</span></div><div><span class="k">Additional true positives</span><span class="v mono">1155</span><span class="s">611 material, 544 non-material</span></div></div>
+
+<section class="card">
+<div class="card-head"><h2>By unit</h2><p class="card-sub">Open a unit for its snag-by-snag list.</p></div>
+<div class="tablescroll"><table class="cmp"><thead><tr><th>Unit</th><th>Manual snags</th><th>Covered by AI</th><th>Recall</th>
+<th>AI snags</th><th>Matched to manual</th><th>Deleted</th><th>Additional true positives</th></tr></thead>
+<tbody><tr><td class="rl"><b><a href="performance-review-t240.html">T240</a></b></td><td class="num">240</td><td class="num">219</td><td class="num">88%<span class="sub">212 of 240</span></td><td class="num">599</td><td class="num">254</td><td class="num">18</td><td class="num">327<span class="sub">176 material &middot; 151 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t242.html">T242</a></b></td><td class="num">145</td><td class="num">132</td><td class="num">86%<span class="sub">124 of 145</span></td><td class="num">351</td><td class="num">164</td><td class="num">23</td><td class="num">164<span class="sub">95 material &middot; 69 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t243.html">T243</a></b></td><td class="num">166</td><td class="num">146</td><td class="num">83%<span class="sub">137 of 166</span></td><td class="num">396</td><td class="num">157</td><td class="num">21</td><td class="num">218<span class="sub">107 material &middot; 111 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t245.html">T245</a></b></td><td class="num">181</td><td class="num">167</td><td class="num">88%<span class="sub">159 of 181</span></td><td class="num">626</td><td class="num">168</td><td class="num">12</td><td class="num">446<span class="sub">233 material &middot; 213 non-material</span></td></tr></tbody></table></div>
+</section>
+
+<section>
+<h2>Glossary</h2>
+<div class="card"><ul class="gloss">
+  <li><b>Recall</b> &mdash; the percentage of in-scope manually logged snags captured by AI with a useful description, defining
+    the correct repair work, correct trade and location.</li>
+  <li><b>Certain match</b> &mdash; the AI snag fully describes the onsite snag. <b>Likely match</b> &mdash; the AI snag partly
+    describes it. <b>No match</b> &mdash; no AI snag covers it.</li>
+  <li><b>Snag merged with another</b> &mdash; the AI detected the onsite snag, but the detection is not a separate snag on the
+    dashboard: it sits with another AI snag. The AI detection is shown, without a dashboard snag ID.</li>
+  <li><b>AI only</b> &mdash; AI snags on the dashboard that no onsite snag covers. <b>Deleted</b> ones were deleted on the QA/QC
+    board; the rest are additional true positive AI snags. <b>Material</b> / <b>Non-material</b> &mdash; the snag's tag on the
+    dashboard; snags not tagged non-material count as material.</li>
+</ul></div>
+</section>
+
+<p class="foot">
+  Generated from <span class="mono">data/performance-review.json</span> by
+  <span class="mono">build_performance_review.py</span> &middot; 29 Oct 2026.
+</p>
+
+</div>
+</body>
+</html>
