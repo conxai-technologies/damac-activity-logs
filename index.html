@@ -212,9 +212,45 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
 
 .ex-who{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
 .mtrack i.del{background:var(--c-del)}
+/* All changes: one tint per group, accepted to deleted */
+.dt.adj .g-accepted{background:#c6e7cd} .dt.adj .g-minor{background:#e8f5ea}
+.dt.adj .g-major{background:#fcefbf} .dt.adj .g-deleted{background:#f6d2d5}
+.dt.adj .sub{color:var(--ink2)}
+/* Change details: the cards below All changes, under one heading ruled like the masthead */
+.part-head{margin:34px 0 18px;padding-top:16px;border-top:2px solid var(--ink)}
+.part-head h2{font-size:24px;letter-spacing:-.02em;font-weight:680}
+/* Performance improvements: two bars per field, August (light blue) over September
+   (light orange), shares on one axis. Both are under 3:1 on white, so every bar carries its value */
+.sw.fc-now,.fc-bar i.now{background:#ec9a4e} .sw.fc-old,.fc-bar i.old{background:#6fa8e0}
+.fcmp{max-width:880px}
+.fc-row{display:grid;grid-template-columns:150px 1fr 88px;column-gap:14px;align-items:center}
+.fc-lab{font-size:12.8px;font-weight:600;color:var(--ink)}
+.fc-lab .sub{display:block;font-size:10.8px;font-weight:500;color:var(--muted)}
+.fc-track{padding:6px 0;background:linear-gradient(to left,var(--line2) 1px,transparent 1px),
+  linear-gradient(to right,var(--line2) 1px,transparent 1px) 0 0/var(--step,25%) 100%}
+.fc-bar{display:flex;align-items:center;gap:7px;height:13px}
+.fc-bar+.fc-bar{margin-top:2px}
+.fc-bar i{display:block;flex:none;height:13px;border-radius:0 4px 4px 0;min-width:0}
+.fc-bar i:hover{filter:brightness(.9)}
+.fc-val{font-size:11.6px;font-weight:600;color:var(--ink2)}
+.fc-diff{text-align:right;font-size:12.6px;font-weight:700;color:var(--ink)}
+.fc-any{margin-top:6px;border-top:1px solid var(--line)}
+/* Accepted unchanged: its own section, in the All changes table's green */
+.fc-ok{max-width:880px;margin-top:18px;padding:12px 14px 6px;background:#e2f3e5;
+  border:1px solid #c6e7cd;border-left:4px solid #8fcf9b;border-radius:10px}
+.fc-ok h3{margin:0;font-size:13.5px;font-weight:700;color:var(--ink)}
+.fc-ok>p{margin:2px 0 8px;font-size:12.4px;color:var(--ink2)}
+.fc-head span{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);
+  font-weight:700;padding-bottom:6px}
+.fc-ticks{position:relative;height:18px;font-size:11px;color:var(--muted)}
+.fc-ticks span{position:absolute;top:3px;transform:translateX(-50%)}
+.fc-ticks span:first-child{transform:none} .fc-ticks span:last-child{transform:translateX(-100%)}
 .sunit{flex:0 0 235px}
-.scope-cols{grid-template-columns:minmax(320px,400px) 1fr}
-@media (max-width:720px){.sunit{flex:0 0 auto}}
+@media (min-width:901px){.scope-cols{grid-template-columns:minmax(320px,400px) 1fr}}
+@media (max-width:720px){.sunit{flex:0 0 auto}
+  .fc-row{grid-template-columns:78px 1fr 68px;column-gap:8px}
+  .fc-head span{font-size:10px;letter-spacing:.02em} .fc-ticks span.odd{display:none}
+  .fc-ticks span:last-child{transform:translateX(-50%)}}
 </style>
 </head>
 <body>
@@ -233,7 +269,7 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
       <h1>Review Stats</h1>
       <p class="subline">Across six units, 316 of the 1,672 AI-generated material snags were deleted (18.9%), 138 were changed (8.3%), and 1,218 had no change (72.8%). Separately, the priority changed on 247 (14.8%) and the trade on 12 (0.7%).</p>
     </div>
-    <div class="provenance">Source <b>QA/QC change history</b><br>Units <b>6</b> &middot; Read <b>2026-10-28</b><br>Generated <b>29 Oct 2026</b></div>
+    <div class="provenance">Source <b>QA/QC change history</b><br>Units <b>6</b> &middot; Read <b>2026-10-28</b><br>Generated <b>30 Oct 2026</b></div>
   </div>
   <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html" aria-current="page">Review Stats</a><a class="tab" href="time-motion-ibiza.html">Pilot time and motion Lagoons – Ibiza</a><a class="tab" href="time-motion-gems.html">Pilot time and motion Hills – Gems</a><a class="tab" href="performance-review.html">Performance review</a><a class="tab" href="review-stats.html">Archived Review Stats</a><a class="tab" href="activity-logs.html">Archived activities</a></nav>
 </header>
@@ -282,9 +318,9 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
 
 <article class="card">
   <div class="card-head">
-    <h2>What the review did with each unit's snags</h2>
+    <h2>Review summary</h2>
     <p class="card-sub">Bar length is the unit's material snag count, split into the three
-    outcomes. Changed means the description or type was edited, or the snag was switched to non-material. Priority and trade changes are shown separately below. Unit names link through to pilot time and motion.</p>
+    outcomes. Changed means the description or type was edited, or the snag was switched to non-material. Priority and trade changes are shown separately, under Change details below. Unit names link through to pilot time and motion.</p>
   </div>
   <div class="legend"><span><i class="sw deleted"></i>Deleted <b class="mono">316</b></span><span><i class="sw changed"></i>Changed <b class="mono">138</b></span><span><i class="sw untouched"></i>No change <b class="mono">1,218</b></span></div>
   <div class="chart">
@@ -361,6 +397,124 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
       </div>
     </div></div>
 </article>
+
+
+<article class="card">
+  <div class="card-head">
+    <h2>Performance improvements</h2>
+    <p class="card-sub">Comparison of AI snagging review statistics between August and September Matterport captures</p>
+  </div>
+  <div class="legend">
+    <span><i class="sw fc-old"></i>August version (Malta units)</span>
+    <span><i class="sw fc-now"></i>September version (Ibiza units)</span>
+  </div>
+  <div class="fcmp" style="--step:25.0000%">
+    <div class="fc-row fc-head"><span></span><span>Share of material snags</span><span class="fc-diff">Percentage improvement</span></div>
+    <div class="fc-row">
+      <span class="fc-lab">Priority</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:55.68%" title="August version (Malta units): 290 of 1,302 snags (22.3%)"></i><span class="fc-val mono">22.3%</span></div><div class="fc-bar"><i class="now" style="width:33.43%" title="September version (Ibiza units): 157 of 1,174 snags (13.4%)"></i><span class="fc-val mono">13.4%</span></div></div>
+      <span class="fc-diff mono">+40%</span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Description</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:36.29%" title="August version (Malta units): 189 of 1,302 snags (14.5%)"></i><span class="fc-val mono">14.5%</span></div><div class="fc-bar"><i class="now" style="width:20.23%" title="September version (Ibiza units): 95 of 1,174 snags (8.1%)"></i><span class="fc-val mono">8.1%</span></div></div>
+      <span class="fc-diff mono">+44%</span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Trade</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:1.34%" title="August version (Malta units): 7 of 1,302 snags (0.5%)"></i><span class="fc-val mono">0.5%</span></div><div class="fc-bar"><i class="now" style="width:2.13%" title="September version (Ibiza units): 10 of 1,174 snags (0.9%)"></i><span class="fc-val mono">0.9%</span></div></div>
+      <span class="fc-diff mono"><span title="Not enough data: 10 or fewer snags a side">&mdash;</span></span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Location</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:0.38%" title="August version (Malta units): 2 of 1,302 snags (0.2%)"></i><span class="fc-val mono">0.2%</span></div><div class="fc-bar"><i class="now" style="width:0.00%" title="September version (Ibiza units): 0 of 1,174 snags (0.0%)"></i><span class="fc-val mono">0.0%</span></div></div>
+      <span class="fc-diff mono"><span title="Not enough data: 10 or fewer snags a side">&mdash;</span></span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Photo</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:0.38%" title="August version (Malta units): 2 of 1,302 snags (0.2%)"></i><span class="fc-val mono">0.2%</span></div><div class="fc-bar"><i class="now" style="width:0.00%" title="September version (Ibiza units): 0 of 1,174 snags (0.0%)"></i><span class="fc-val mono">0.0%</span></div></div>
+      <span class="fc-diff mono"><span title="Not enough data: 10 or fewer snags a side">&mdash;</span></span>
+    </div>
+    <div class="fc-row fc-any">
+      <span class="fc-lab">Any field<span class="sub">one or more fields</span></span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:80.45%" title="August version (Malta units): 419 of 1,302 snags (32.2%)"></i><span class="fc-val mono">32.2%</span></div><div class="fc-bar"><i class="now" style="width:45.57%" title="September version (Ibiza units): 214 of 1,174 snags (18.2%)"></i><span class="fc-val mono">18.2%</span></div></div>
+      <span class="fc-diff mono">+43%</span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Deleted<span class="sub">removed from the board</span></span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:87.37%" title="August version (Malta units): 455 of 1,302 snags (34.9%)"></i><span class="fc-val mono">34.9%</span></div><div class="fc-bar"><i class="now" style="width:31.30%" title="September version (Ibiza units): 147 of 1,174 snags (12.5%)"></i><span class="fc-val mono">12.5%</span></div></div>
+      <span class="fc-diff mono">+64%</span>
+    </div>
+    <div class="fc-row fc-axis"><span></span><div class="fc-ticks"><span style="left:0%">0%</span><span class=odd style="left:25%">10%</span><span style="left:50%">20%</span><span class=odd style="left:75%">30%</span><span style="left:100%">40%</span></div><span></span></div>
+  </div>
+  <section class="fc-ok">
+    <h3>Accepted unchanged</h3>
+    <p>Snags the review kept with nothing changed, on its own scale.</p>
+    <div class="fcmp" style="--step:12.5000%">
+    <div class="fc-row fc-head"><span></span><span>Share of material snags</span><span class="fc-diff">Percentage improvement</span></div>
+    <div class="fc-row">
+      <span class="fc-lab">Unchanged<span class="sub">kept, nothing changed</span></span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:41.09%" title="August version (Malta units): 428 of 1,302 snags (32.9%)"></i><span class="fc-val mono">32.9%</span></div><div class="fc-bar"><i class="now" style="width:86.35%" title="September version (Ibiza units): 811 of 1,174 snags (69.1%)"></i><span class="fc-val mono">69.1%</span></div></div>
+      <span class="fc-diff mono">+110%</span>
+    </div>
+    <div class="fc-row fc-axis"><span></span><div class="fc-ticks"><span style="left:0%">0%</span><span class=odd style="left:12%">10%</span><span style="left:25%">20%</span><span class=odd style="left:38%">30%</span><span style="left:50%">40%</span><span class=odd style="left:62%">50%</span><span style="left:75%">60%</span><span class=odd style="left:88%">70%</span><span style="left:100%">80%</span></div><span></span></div>
+  </div>
+  </section>
+</article>
+
+
+<article class="card">
+  <div class="card-head">
+    <h2>All changes</h2>
+    <p class="card-sub">Every material snag falls into exactly one of four groups, by how much the review changed it. Unlike the Review summary above, a priority or trade change counts here.</p>
+  </div>
+  <div class="tblwrap narrow">
+    <table class="dt adj">
+      <thead><tr><th>Group</th><th>What it records</th></tr></thead>
+      <tbody>
+      <tr><th class="g-accepted">Accepted as is</th><td class="wrap">Kept with no change by the review team in any category</td></tr>
+      <tr><th class="g-minor">Minor adjustment</th><td class="wrap">Only a priority change, or only a description adjustment of 4 words or fewer</td></tr>
+      <tr><th class="g-major">Major adjustment</th><td class="wrap">Any other change (trade, type, a description adjustment of 5 words or more, or a switch to non-material), or a combination of changes, such as a priority change with a description adjustment of 4 words or fewer</td></tr>
+      <tr><th class="g-deleted">Deleted</th><td class="wrap">Removed from the board</td></tr></tbody>
+    </table>
+  </div>
+  <p class="between">Each cell is the number of snags in that group, with its share of the unit's material snags in brackets. The four groups add up to the unit's material snags.</p>
+  <div class="tblwrap">
+    <table class="dt adj">
+      <thead><tr><th>Unit</th><th class="num">Material</th><th class="num g-accepted">Accepted as is</th><th class="num g-minor">Minor adjustment</th><th class="num g-major">Major adjustment</th><th class="num g-deleted">Deleted</th></tr></thead>
+      <tbody>
+      <tr><th class="mono">Ibiza - T240 (Matterport)</th>
+        <td class="num">373</td>
+        <td class="num g-accepted">304<span class="sub">81.5%</span></td><td class="num g-minor">2<span class="sub">0.5%</span></td><td class="num g-major">38<span class="sub">10.2%</span></td><td class="num g-deleted">29<span class="sub">7.8%</span></td></tr>
+      <tr><th class="mono">Ibiza - T241 (iGUIDE)</th>
+        <td class="num">132</td>
+        <td class="num g-accepted">23<span class="sub">17.4%</span></td><td class="num g-minor">52<span class="sub">39.4%</span></td><td class="num g-major">19<span class="sub">14.4%</span></td><td class="num g-deleted">38<span class="sub">28.8%</span></td></tr>
+      <tr><th class="mono">Ibiza - T242 (Matterport)</th>
+        <td class="num">205</td>
+        <td class="num g-accepted">96<span class="sub">46.8%</span></td><td class="num g-minor">48<span class="sub">23.4%</span></td><td class="num g-major">12<span class="sub">5.9%</span></td><td class="num g-deleted">49<span class="sub">23.9%</span></td></tr>
+      <tr><th class="mono">Ibiza - T243 (Matterport)</th>
+        <td class="num">218</td>
+        <td class="num g-accepted">126<span class="sub">57.8%</span></td><td class="num g-minor">29<span class="sub">13.3%</span></td><td class="num g-major">22<span class="sub">10.1%</span></td><td class="num g-deleted">41<span class="sub">18.8%</span></td></tr>
+      <tr><th class="mono">Ibiza - T245 (Matterport)</th>
+        <td class="num">378</td>
+        <td class="num g-accepted">285<span class="sub">75.4%</span></td><td class="num g-minor">59<span class="sub">15.6%</span></td><td class="num g-major">6<span class="sub">1.6%</span></td><td class="num g-deleted">28<span class="sub">7.4%</span></td></tr>
+      <tr><th class="mono">Hills Gems - E511B (Matterport)</th>
+        <td class="num">366</td>
+        <td class="num g-accepted">193<span class="sub">52.7%</span></td><td class="num g-minor">29<span class="sub">7.9%</span></td><td class="num g-major">13<span class="sub">3.6%</span></td><td class="num g-deleted">131<span class="sub">35.8%</span></td></tr></tbody>
+      <tfoot>
+      <tr><th class="mono">Total</th>
+        <td class="num">1,672</td>
+        <td class="num g-accepted">1,027<span class="sub">61.4%</span></td><td class="num g-minor">219<span class="sub">13.1%</span></td><td class="num g-major">110<span class="sub">6.6%</span></td><td class="num g-deleted">316<span class="sub">18.9%</span></td></tr></tfoot>
+    </table>
+  </div>
+  <p class="after">Of the 219 minor adjustments, 191 changed only the priority and 28 only the description. The 12 snags with both a priority change and a description adjustment of 4 words or fewer are major adjustments.</p>
+</article>
+
+<section class="part" aria-labelledby="change-details">
+<div class="part-head">
+  <h2 id="change-details">Change details</h2>
+  <p class="card-sub">Each kind of change unit by unit: deletions, priority and trade changes, the review's change categories, the archived page's fields, who made each change, and worked examples.</p>
+</div>
 
 
 <article class="card">
@@ -672,6 +826,98 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
 
 <article class="card">
   <div class="card-head">
+    <h2>Changes by field</h2>
+    <p class="card-sub">The change history records which field was edited. As on the archived Review Stats page, the five fields counted are:</p>
+  </div>
+  <div class="tblwrap narrow">
+    <table class="dt">
+      <thead><tr><th>Field</th><th>What it records</th></tr></thead>
+      <tbody>
+      <tr><th>Priority</th><td class="wrap">Urgency of the defect: low, medium or high</td></tr>
+      <tr><th>Description</th><td class="wrap">The written text of the defect, including its type</td></tr>
+      <tr><th>Trade</th><td class="wrap">Responsible discipline: Civil, MEP, Joinery, Aluminium</td></tr>
+      <tr><th>Location</th><td class="wrap">Where in the unit the defect sits</td></tr>
+      <tr><th>Photo</th><td class="wrap">The attached evidence image</td></tr></tbody>
+    </table>
+  </div>
+  <p class="between">Each cell is the number of snags on which that field was changed, with its share of the unit's material snags in brackets. The last column is the share of the unit's snags changed in any field at all (i.e. one field or more). These are the archived page's rules, so a priority or trade change counts as a change here.</p>
+  <div class="tblwrap">
+    <table class="dt">
+      <thead><tr><th>Unit</th><th class="num">Material</th><th class="num">Priority</th><th class="num">Description</th><th class="num">Trade</th><th class="num">Location</th><th class="num">Photo</th>
+        <th class="num">Changed</th><th class="num wide">% snags changed</th></tr></thead>
+      <tbody>
+      <tr><th class="mono">Ibiza - T240 (Matterport)</th>
+        <td class="num">373</td>
+        <td class="num">19<span class="sub">5.1%</span></td><td class="num">36<span class="sub">9.7%</span></td><td class="num">6<span class="sub">1.6%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td>
+        <td class="num">38</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:10.19%"
+            title="Ibiza - T240 (Matterport): 38 of 373 snags changed"></i></span>
+          <span class="mval mono">10.2%</span>
+        </td></tr>
+      <tr><th class="mono">Ibiza - T241 (iGUIDE)</th>
+        <td class="num">132</td>
+        <td class="num">56<span class="sub">42.4%</span></td><td class="num">25<span class="sub">18.9%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td>
+        <td class="num">71</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:53.79%"
+            title="Ibiza - T241 (iGUIDE): 71 of 132 snags changed"></i></span>
+          <span class="mval mono">53.8%</span>
+        </td></tr>
+      <tr><th class="mono">Ibiza - T242 (Matterport)</th>
+        <td class="num">205</td>
+        <td class="num">48<span class="sub">23.4%</span></td><td class="num">19<span class="sub">9.3%</span></td><td class="num">1<span class="sub">0.5%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td>
+        <td class="num">60</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:29.27%"
+            title="Ibiza - T242 (Matterport): 60 of 205 snags changed"></i></span>
+          <span class="mval mono">29.3%</span>
+        </td></tr>
+      <tr><th class="mono">Ibiza - T243 (Matterport)</th>
+        <td class="num">218</td>
+        <td class="num">32<span class="sub">14.7%</span></td><td class="num">30<span class="sub">13.8%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td>
+        <td class="num">51</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:23.39%"
+            title="Ibiza - T243 (Matterport): 51 of 218 snags changed"></i></span>
+          <span class="mval mono">23.4%</span>
+        </td></tr>
+      <tr><th class="mono">Ibiza - T245 (Matterport)</th>
+        <td class="num">378</td>
+        <td class="num">58<span class="sub">15.3%</span></td><td class="num">10<span class="sub">2.6%</span></td><td class="num">3<span class="sub">0.8%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td>
+        <td class="num">65</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:17.20%"
+            title="Ibiza - T245 (Matterport): 65 of 378 snags changed"></i></span>
+          <span class="mval mono">17.2%</span>
+        </td></tr>
+      <tr><th class="mono">Hills Gems - E511B (Matterport)</th>
+        <td class="num">366</td>
+        <td class="num">34<span class="sub">9.3%</span></td><td class="num">16<span class="sub">4.4%</span></td><td class="num">2<span class="sub">0.5%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td>
+        <td class="num">42</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:11.48%"
+            title="Hills Gems - E511B (Matterport): 42 of 366 snags changed"></i></span>
+          <span class="mval mono">11.5%</span>
+        </td></tr></tbody>
+      <tfoot>
+      <tr><th class="mono">Total</th>
+        <td class="num">1,672</td>
+        <td class="num">247<span class="sub">14.8%</span></td><td class="num">136<span class="sub">8.1%</span></td><td class="num">12<span class="sub">0.7%</span></td><td class="num">0<span class="sub">0.0%</span></td><td class="num">0<span class="sub">0.0%</span></td>
+        <td class="num">327</td>
+        <td class="meter">
+          <span class="mtrack"><i style="width:19.56%"
+            title="Total: 327 of 1,672 snags changed"></i></span>
+          <span class="mval mono">19.6%</span>
+        </td></tr></tfoot>
+    </table>
+  </div>
+  <p class="after">A snag can be edited in more than one field, so the field columns sum to more than the changed column. The review team did not edit the location or photo of any of these snags: every location edit in the change history was an automated update. The 2 snags switched to non-material are not counted, as the switch is not an edit to any of these fields.</p>
+</article>
+
+
+<article class="card">
+  <div class="card-head">
     <h2>Changes by person</h2>
     <p class="card-sub">Who made each change, credited to whoever made its final edit, with the units they worked on.</p>
   </div>
@@ -727,6 +973,7 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
     <div class="ex-cols"><div class="ex-side is-ai"><h4>AI output</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Floor 3 / Accessible Roof</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Damaged</dd></div><div class="ex-f is-diff"><dt>Material or non-material</dt><dd>Material</dd></div><div class="ex-f"><dt>Description</dt><dd>stains on the cat lader</dd></div></dl></div><div class="ex-side is-man"><h4>Manual edit</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Floor 3 / Accessible Roof</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Damaged</dd></div><div class="ex-f is-diff"><dt>Material or non-material</dt><dd>Non material</dd></div><div class="ex-f"><dt>Description</dt><dd>stains on the cat lader</dd></div></dl></div></div>
   </div>
 </article></div>
+</section>
 
 </div>
 </body>
