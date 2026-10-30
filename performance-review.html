@@ -193,6 +193,7 @@ col.w-snag{width:16%} col.w-trade{width:6%} col.w-pic{width:10%} col.w-man{width
 .th{position:relative;display:inline-block;width:72px;height:72px;padding:0;margin:0;
   border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel);cursor:zoom-in}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
+.bx{position:absolute;box-sizing:border-box;border:1.5px solid #e61e1e;pointer-events:none}
 .th .src{position:absolute;left:0;bottom:0;font-size:8.5px;font-weight:700;line-height:1;
   padding:2px 3px;color:#fff;border-radius:0 5px 0 0}
 .src.m{background:rgba(20,23,26,.8)} .src.a{background:var(--ai)}
@@ -230,6 +231,7 @@ dialog#lb button{background:#fff;border:none;border-radius:7px;padding:6px 10px;
 .lbview{width:100%;height:calc(94vh - 48px);overflow:auto;display:grid;place-items:center;padding:16px}
 dialog#lb img{max-width:100%;max-height:calc(94vh - 80px);display:block;cursor:zoom-in}
 dialog#lb img.actual{max-width:none;max-height:none;cursor:zoom-out}
+.lbw{position:relative}.lbw.actual{width:max-content}.lbw .bx{border-width:3px}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 .tablescroll{overflow-x:auto}
@@ -283,13 +285,13 @@ dialog#lb img.actual{max-width:none;max-height:none;cursor:zoom-out}
   <nav class="tabs" aria-label="Sections"><a class="tab" href="index.html">Review Stats</a><a class="tab" href="time-motion-ibiza.html">Pilot time and motion Lagoons – Ibiza</a><a class="tab" href="time-motion-gems.html">Pilot time and motion Hills – Gems</a><a class="tab" href="performance-review.html" aria-current="page">Performance review</a><a class="tab" href="review-stats.html">Archived Review Stats</a><a class="tab" href="activity-logs.html">Archived activities</a></nav>
 </header>
 
-<div class="strip"><div><span class="k">Units</span><span class="v mono">4</span><span class="s">T240, T242, T243, T245</span></div><div><span class="k">Manual snags</span><span class="v mono">732</span><span class="s">target visual snags within the area captured</span></div><div><span class="k">Covered by AI</span><span class="v mono">664</span><span class="s">91% of manual snags</span></div><div><span class="k">Recall</span><span class="v mono">86%</span><span class="s">632 of 732</span></div><div><span class="k">AI snags</span><span class="v mono">1972</span><span class="s">on the ConXAI dashboard (roof excluded)</span></div><div><span class="k">Additional true positives</span><span class="v mono">1155</span><span class="s">611 material, 544 non-material</span></div></div>
+<div class="strip"><div><span class="k">Units</span><span class="v mono">4</span><span class="s">T240, T242, T243, T245</span></div><div><span class="k">Manual snags</span><span class="v mono">732</span><span class="s">target visual snags within the area captured</span></div><div><span class="k">Covered by AI</span><span class="v mono">664</span><span class="s">91% of manual snags</span></div><div><span class="k">Recall</span><span class="v mono">86%</span><span class="s">632 of 732</span></div><div><span class="k">AI snags</span><span class="v mono">1972</span><span class="s">on the ConXAI dashboard (roof excluded)</span></div><div><span class="k">Additional true positives</span><span class="v mono">1192</span><span class="s">632 material, 560 non-material</span></div></div>
 
 <section class="card">
 <div class="card-head"><h2>By unit</h2><p class="card-sub">Open a unit for its snag-by-snag list.</p></div>
 <div class="tablescroll"><table class="cmp"><thead><tr><th>Unit</th><th>Manual snags</th><th>Covered by AI</th><th>Recall</th>
 <th>AI snags</th><th>Matched to manual</th><th>Deleted</th><th>Additional true positives</th></tr></thead>
-<tbody><tr><td class="rl"><b><a href="performance-review-t240.html">T240</a></b></td><td class="num">240</td><td class="num">219</td><td class="num">88%<span class="sub">212 of 240</span></td><td class="num">599</td><td class="num">254</td><td class="num">18</td><td class="num">327<span class="sub">176 material &middot; 151 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t242.html">T242</a></b></td><td class="num">145</td><td class="num">132</td><td class="num">86%<span class="sub">124 of 145</span></td><td class="num">351</td><td class="num">164</td><td class="num">23</td><td class="num">164<span class="sub">95 material &middot; 69 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t243.html">T243</a></b></td><td class="num">166</td><td class="num">146</td><td class="num">83%<span class="sub">137 of 166</span></td><td class="num">396</td><td class="num">157</td><td class="num">21</td><td class="num">218<span class="sub">107 material &middot; 111 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t245.html">T245</a></b></td><td class="num">181</td><td class="num">167</td><td class="num">88%<span class="sub">159 of 181</span></td><td class="num">626</td><td class="num">168</td><td class="num">12</td><td class="num">446<span class="sub">233 material &middot; 213 non-material</span></td></tr></tbody></table></div>
+<tbody><tr><td class="rl"><b><a href="performance-review-t240.html">T240</a></b></td><td class="num">240</td><td class="num">219</td><td class="num">88%<span class="sub">212 of 240</span></td><td class="num">599</td><td class="num">238</td><td class="num">19</td><td class="num">342<span class="sub">185 material &middot; 157 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t242.html">T242</a></b></td><td class="num">145</td><td class="num">132</td><td class="num">86%<span class="sub">124 of 145</span></td><td class="num">351</td><td class="num">153</td><td class="num">26</td><td class="num">172<span class="sub">98 material &middot; 74 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t243.html">T243</a></b></td><td class="num">166</td><td class="num">146</td><td class="num">83%<span class="sub">137 of 166</span></td><td class="num">396</td><td class="num">151</td><td class="num">21</td><td class="num">224<span class="sub">110 material &middot; 114 non-material</span></td></tr><tr><td class="rl"><b><a href="performance-review-t245.html">T245</a></b></td><td class="num">181</td><td class="num">167</td><td class="num">88%<span class="sub">159 of 181</span></td><td class="num">626</td><td class="num">160</td><td class="num">12</td><td class="num">454<span class="sub">239 material &middot; 215 non-material</span></td></tr></tbody></table></div>
 </section>
 
 <section>
@@ -309,7 +311,7 @@ dialog#lb img.actual{max-width:none;max-height:none;cursor:zoom-out}
 
 <p class="foot">
   Generated from <span class="mono">data/performance-review.json</span> by
-  <span class="mono">build_performance_review.py</span> &middot; 29 Oct 2026.
+  <span class="mono">build_performance_review.py</span> &middot; 30 Oct 2026.
 </p>
 
 </div>

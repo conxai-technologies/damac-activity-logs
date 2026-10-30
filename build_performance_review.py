@@ -18,8 +18,9 @@ The JSON is a snapshot exported from the snag-match workspace
   material or non-material.
 
 Photos are in assets/performance-review/<unit>/, one 640 px copy each, used for
-the thumbnail and the enlarged view alike. Every count on the pages is
-recomputed here from those rows.
+the thumbnail and the enlarged view alike. A dashboard photo can show several
+AI snags, so it is stored without boxes and each AI snag's boxes are drawn over
+it on the page. Every count on the pages is recomputed here from those rows.
 """
 
 import json
@@ -86,10 +87,18 @@ def bar(title, total, parts):
             f'<div class="seg" role="img" aria-label="{esc(title)}">{seg}</div><div class="key">{key}</div></div>')
 
 
+def box_spans(boxes):
+    """An AI snag's boxes (fractions of the photo) drawn over its dashboard photo."""
+    return "".join(f'<span class="bx" style="left:{x:.2%};top:{y:.2%};width:{w:.2%};height:{h:.2%}"></span>'
+                   for x, y, w, h in boxes)
+
+
 def thumbs(items):
-    out = [f'<button class="th" data-full="{esc(p)}" data-name="{esc(label)}" aria-label="Open photo">'
-           f'<img loading="lazy" src="{esc(p)}" alt=""><span class="src {tag.lower()}">{tag}</span></button>'
-           for p, label, tag in items if p][:MAX_PICS]
+    """items: (photo, label, tag) or, for a dashboard photo, (photo, label, tag, the snag's boxes)."""
+    out = [f'<button class="th" data-full="{esc(p)}" data-name="{esc(label)}"'
+           + (f' data-boxes="{esc(json.dumps(bx[0]))}"' if bx and bx[0] else "") + ' aria-label="Open photo">'
+           f'<img loading="lazy" src="{esc(p)}" alt="">{box_spans(bx[0] if bx else [])}<span class="src {tag.lower()}">{tag}</span></button>'
+           for p, label, tag, *bx in items if p][:MAX_PICS]
     return f'<span class="pic-list">{"".join(out)}</span>' if out else ""
 
 
@@ -100,7 +109,7 @@ def ai_desc(a, flags=""):
 
 
 def ai_pics(a):
-    return [(p, f'#{a["id"]} {a["element"] or "AI snag"}', "A") for p in a["images"]]
+    return [(g["src"], f'#{a["id"]} {a["element"] or "AI snag"}', "A", g["boxes"]) for g in a["images"]]
 
 
 def kind_tag(a):
@@ -227,7 +236,7 @@ def render_table(u):
 <p class="empty" id="empty" hidden>No snags match these filters.</p></div>
 </section>
 <dialog id="lb"><div class="lbbar"><span class="lbname" id="lbname"></span><button type="button" id="lbzoom">View actual size</button><button
-  type="button" id="lbx" aria-label="Close">&times;</button></div><div class="lbview"><img id="lbi" alt="Snag photo"></div></dialog>"""
+  type="button" id="lbx" aria-label="Close">&times;</button></div><div class="lbview"><div class="lbw" id="lbw"><img id="lbi" alt="Snag photo"></div></div></dialog>"""
 
 
 def foot():
@@ -402,6 +411,7 @@ col.w-snag{width:16%} col.w-trade{width:6%} col.w-pic{width:10%} col.w-man{width
 .th{position:relative;display:inline-block;width:72px;height:72px;padding:0;margin:0;
   border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel);cursor:zoom-in}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
+.bx{position:absolute;box-sizing:border-box;border:1.5px solid #e61e1e;pointer-events:none}
 .th .src{position:absolute;left:0;bottom:0;font-size:8.5px;font-weight:700;line-height:1;
   padding:2px 3px;color:#fff;border-radius:0 5px 0 0}
 .src.m{background:rgba(20,23,26,.8)} .src.a{background:var(--ai)}
@@ -439,6 +449,7 @@ dialog#lb button{background:#fff;border:none;border-radius:7px;padding:6px 10px;
 .lbview{width:100%;height:calc(94vh - 48px);overflow:auto;display:grid;place-items:center;padding:16px}
 dialog#lb img{max-width:100%;max-height:calc(94vh - 80px);display:block;cursor:zoom-in}
 dialog#lb img.actual{max-width:none;max-height:none;cursor:zoom-out}
+.lbw{position:relative}.lbw.actual{width:max-content}.lbw .bx{border-width:3px}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 .tablescroll{overflow-x:auto}
@@ -491,8 +502,12 @@ JS = """
   var cl=document.getElementById('clamp');function setClamp(){document.body.classList.toggle('clamp',cl.checked);}
   cl.addEventListener('change',setClamp);setClamp();
   var lb=document.getElementById('lb'),lbi=document.getElementById('lbi'),zoom=document.getElementById('lbzoom');
-  function setActual(on){lbi.classList.toggle('actual',on);zoom.textContent=on?'Fit to screen':'View actual size';}
+  var lbw=document.getElementById('lbw');
+  function setActual(on){lbi.classList.toggle('actual',on);lbw.classList.toggle('actual',on);zoom.textContent=on?'Fit to screen':'View actual size';}
   tb.addEventListener('click',function(ev){var b=ev.target.closest('.th');if(!b)return;setActual(false);
+    [].forEach.call(lbw.querySelectorAll('.bx'),function(x){x.remove();});
+    JSON.parse(b.dataset.boxes||'[]').forEach(function(r){var x=document.createElement('span');x.className='bx';
+      x.style.left=r[0]*100+'%';x.style.top=r[1]*100+'%';x.style.width=r[2]*100+'%';x.style.height=r[3]*100+'%';lbw.appendChild(x);});
     lbi.src=b.dataset.full;document.getElementById('lbname').textContent=b.dataset.name||'Snag photo';lb.showModal();});
   zoom.addEventListener('click',function(){setActual(!lbi.classList.contains('actual'));});
   lbi.addEventListener('click',function(){setActual(!lbi.classList.contains('actual'));});
@@ -507,7 +522,8 @@ def main():
     data = json.loads(DATA_PATH.read_text(encoding="utf-8"))
     units = [u["unit"] for u in data["units"]]
     missing = [p for u in data["units"] for r in u["manual"] + u["ai_only"]
-               for p in r.get("photos", []) + r.get("images", []) + [x for a in ((r.get("ai") or {}).get("snags") or []) for x in a["images"]]
+               for p in r.get("photos", []) + [g["src"] for g in r.get("images", [])]
+               + [g["src"] for a in ((r.get("ai") or {}).get("snags") or []) for g in a["images"]]
                + [d["image"] for d in ((r.get("ai") or {}).get("detections") or []) if d["image"]]
                if not (ROOT / p).is_file()]
     assert not missing, f"{len(missing)} photos missing, e.g. {missing[0]}"

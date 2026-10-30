@@ -96,8 +96,10 @@ own page, reached with the unit buttons in the masthead.
 workspace (`plumbline_eval/export_performance_review.py`): manual snags and AI
 snags from the 21 Oct 2026 dashboard export, match levels and recall from the
 plumbline evaluation runs, the dashboard snag shown from snag-match's matching
-rule, and deletions from the QA/QC change export of 28 Oct 2026. Each photo is a
-single 640 px copy, used for the thumbnail and the enlarged view alike.
+rule (or the one the evaluation linked, when that is its own dashboard snag and
+snag-match picked a different one), and deletions from the QA/QC change export
+of 28 Oct 2026. Each photo is a single 640 px copy, used for the thumbnail and
+the enlarged view alike, with the AI snag's boxes drawn over it on the page.
 
 ## Archived activities
 
