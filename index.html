@@ -216,9 +216,41 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
 .dt.adj .g-accepted{background:#c6e7cd} .dt.adj .g-minor{background:#e8f5ea}
 .dt.adj .g-major{background:#fcefbf} .dt.adj .g-deleted{background:#f6d2d5}
 .dt.adj .sub{color:var(--ink2)}
+/* Change details: the cards below All changes, under one heading ruled like the masthead */
+.part-head{margin:34px 0 18px;padding-top:16px;border-top:2px solid var(--ink)}
+.part-head h2{font-size:24px;letter-spacing:-.02em;font-weight:680}
+/* Performance improvements: two bars per field, August (light blue) over September
+   (light orange), shares on one axis. Both are under 3:1 on white, so every bar carries its value */
+.sw.fc-now,.fc-bar i.now{background:#ec9a4e} .sw.fc-old,.fc-bar i.old{background:#6fa8e0}
+.fcmp{max-width:880px}
+.fc-row{display:grid;grid-template-columns:150px 1fr 88px;column-gap:14px;align-items:center}
+.fc-lab{font-size:12.8px;font-weight:600;color:var(--ink)}
+.fc-lab .sub{display:block;font-size:10.8px;font-weight:500;color:var(--muted)}
+.fc-track{padding:6px 0;background:linear-gradient(to left,var(--line2) 1px,transparent 1px),
+  linear-gradient(to right,var(--line2) 1px,transparent 1px) 0 0/var(--step,25%) 100%}
+.fc-bar{display:flex;align-items:center;gap:7px;height:13px}
+.fc-bar+.fc-bar{margin-top:2px}
+.fc-bar i{display:block;flex:none;height:13px;border-radius:0 4px 4px 0;min-width:0}
+.fc-bar i:hover{filter:brightness(.9)}
+.fc-val{font-size:11.6px;font-weight:600;color:var(--ink2)}
+.fc-diff{text-align:right;font-size:12.6px;font-weight:700;color:var(--ink)}
+.fc-any{margin-top:6px;border-top:1px solid var(--line)}
+/* Accepted unchanged: its own section, in the All changes table's green */
+.fc-ok{max-width:880px;margin-top:18px;padding:12px 14px 6px;background:#e2f3e5;
+  border:1px solid #c6e7cd;border-left:4px solid #8fcf9b;border-radius:10px}
+.fc-ok h3{margin:0;font-size:13.5px;font-weight:700;color:var(--ink)}
+.fc-ok>p{margin:2px 0 8px;font-size:12.4px;color:var(--ink2)}
+.fc-head span{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);
+  font-weight:700;padding-bottom:6px}
+.fc-ticks{position:relative;height:18px;font-size:11px;color:var(--muted)}
+.fc-ticks span{position:absolute;top:3px;transform:translateX(-50%)}
+.fc-ticks span:first-child{transform:none} .fc-ticks span:last-child{transform:translateX(-100%)}
 .sunit{flex:0 0 235px}
-.scope-cols{grid-template-columns:minmax(320px,400px) 1fr}
-@media (max-width:720px){.sunit{flex:0 0 auto}}
+@media (min-width:901px){.scope-cols{grid-template-columns:minmax(320px,400px) 1fr}}
+@media (max-width:720px){.sunit{flex:0 0 auto}
+  .fc-row{grid-template-columns:78px 1fr 68px;column-gap:8px}
+  .fc-head span{font-size:10px;letter-spacing:.02em} .fc-ticks span.odd{display:none}
+  .fc-ticks span:last-child{transform:translateX(-50%)}}
 </style>
 </head>
 <body>
@@ -286,9 +318,9 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
 
 <article class="card">
   <div class="card-head">
-    <h2>What the review did with each unit's snags</h2>
+    <h2>Review summary</h2>
     <p class="card-sub">Bar length is the unit's material snag count, split into the three
-    outcomes. Changed means the description or type was edited, or the snag was switched to non-material. Priority and trade changes are shown separately below. Unit names link through to pilot time and motion.</p>
+    outcomes. Changed means the description or type was edited, or the snag was switched to non-material. Priority and trade changes are shown separately, under Change details below. Unit names link through to pilot time and motion.</p>
   </div>
   <div class="legend"><span><i class="sw deleted"></i>Deleted <b class="mono">316</b></span><span><i class="sw changed"></i>Changed <b class="mono">138</b></span><span><i class="sw untouched"></i>No change <b class="mono">1,218</b></span></div>
   <div class="chart">
@@ -369,8 +401,72 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
 
 <article class="card">
   <div class="card-head">
+    <h2>Performance improvements</h2>
+    <p class="card-sub">Comparison of AI snagging review statistics between August and September Matterport captures</p>
+  </div>
+  <div class="legend">
+    <span><i class="sw fc-old"></i>August version (Malta units)</span>
+    <span><i class="sw fc-now"></i>September version (Ibiza units)</span>
+  </div>
+  <div class="fcmp" style="--step:25.0000%">
+    <div class="fc-row fc-head"><span></span><span>Share of material snags</span><span class="fc-diff">Percentage improvement</span></div>
+    <div class="fc-row">
+      <span class="fc-lab">Priority</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:55.68%" title="August version (Malta units): 290 of 1,302 snags (22.3%)"></i><span class="fc-val mono">22.3%</span></div><div class="fc-bar"><i class="now" style="width:33.43%" title="September version (Ibiza units): 157 of 1,174 snags (13.4%)"></i><span class="fc-val mono">13.4%</span></div></div>
+      <span class="fc-diff mono">+40%</span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Description</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:36.29%" title="August version (Malta units): 189 of 1,302 snags (14.5%)"></i><span class="fc-val mono">14.5%</span></div><div class="fc-bar"><i class="now" style="width:20.23%" title="September version (Ibiza units): 95 of 1,174 snags (8.1%)"></i><span class="fc-val mono">8.1%</span></div></div>
+      <span class="fc-diff mono">+44%</span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Trade</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:1.34%" title="August version (Malta units): 7 of 1,302 snags (0.5%)"></i><span class="fc-val mono">0.5%</span></div><div class="fc-bar"><i class="now" style="width:2.13%" title="September version (Ibiza units): 10 of 1,174 snags (0.9%)"></i><span class="fc-val mono">0.9%</span></div></div>
+      <span class="fc-diff mono"><span title="Not enough data: 10 or fewer snags a side">&mdash;</span></span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Location</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:0.38%" title="August version (Malta units): 2 of 1,302 snags (0.2%)"></i><span class="fc-val mono">0.2%</span></div><div class="fc-bar"><i class="now" style="width:0.00%" title="September version (Ibiza units): 0 of 1,174 snags (0.0%)"></i><span class="fc-val mono">0.0%</span></div></div>
+      <span class="fc-diff mono"><span title="Not enough data: 10 or fewer snags a side">&mdash;</span></span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Photo</span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:0.38%" title="August version (Malta units): 2 of 1,302 snags (0.2%)"></i><span class="fc-val mono">0.2%</span></div><div class="fc-bar"><i class="now" style="width:0.00%" title="September version (Ibiza units): 0 of 1,174 snags (0.0%)"></i><span class="fc-val mono">0.0%</span></div></div>
+      <span class="fc-diff mono"><span title="Not enough data: 10 or fewer snags a side">&mdash;</span></span>
+    </div>
+    <div class="fc-row fc-any">
+      <span class="fc-lab">Any field<span class="sub">one or more fields</span></span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:80.45%" title="August version (Malta units): 419 of 1,302 snags (32.2%)"></i><span class="fc-val mono">32.2%</span></div><div class="fc-bar"><i class="now" style="width:45.57%" title="September version (Ibiza units): 214 of 1,174 snags (18.2%)"></i><span class="fc-val mono">18.2%</span></div></div>
+      <span class="fc-diff mono">+43%</span>
+    </div>
+    <div class="fc-row">
+      <span class="fc-lab">Deleted<span class="sub">removed from the board</span></span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:87.37%" title="August version (Malta units): 455 of 1,302 snags (34.9%)"></i><span class="fc-val mono">34.9%</span></div><div class="fc-bar"><i class="now" style="width:31.30%" title="September version (Ibiza units): 147 of 1,174 snags (12.5%)"></i><span class="fc-val mono">12.5%</span></div></div>
+      <span class="fc-diff mono">+64%</span>
+    </div>
+    <div class="fc-row fc-axis"><span></span><div class="fc-ticks"><span style="left:0%">0%</span><span class=odd style="left:25%">10%</span><span style="left:50%">20%</span><span class=odd style="left:75%">30%</span><span style="left:100%">40%</span></div><span></span></div>
+  </div>
+  <section class="fc-ok">
+    <h3>Accepted unchanged</h3>
+    <p>Snags the review kept with nothing changed, on its own scale.</p>
+    <div class="fcmp" style="--step:12.5000%">
+    <div class="fc-row fc-head"><span></span><span>Share of material snags</span><span class="fc-diff">Percentage improvement</span></div>
+    <div class="fc-row">
+      <span class="fc-lab">Unchanged<span class="sub">kept, nothing changed</span></span>
+      <div class="fc-track"><div class="fc-bar"><i class="old" style="width:41.09%" title="August version (Malta units): 428 of 1,302 snags (32.9%)"></i><span class="fc-val mono">32.9%</span></div><div class="fc-bar"><i class="now" style="width:86.35%" title="September version (Ibiza units): 811 of 1,174 snags (69.1%)"></i><span class="fc-val mono">69.1%</span></div></div>
+      <span class="fc-diff mono">+110%</span>
+    </div>
+    <div class="fc-row fc-axis"><span></span><div class="fc-ticks"><span style="left:0%">0%</span><span class=odd style="left:12%">10%</span><span style="left:25%">20%</span><span class=odd style="left:38%">30%</span><span style="left:50%">40%</span><span class=odd style="left:62%">50%</span><span style="left:75%">60%</span><span class=odd style="left:88%">70%</span><span style="left:100%">80%</span></div><span></span></div>
+  </div>
+  </section>
+</article>
+
+
+<article class="card">
+  <div class="card-head">
     <h2>All changes</h2>
-    <p class="card-sub">Every material snag falls into exactly one of four groups, by how much the review changed it. Unlike the outcome chart above, a priority or trade change counts here.</p>
+    <p class="card-sub">Every material snag falls into exactly one of four groups, by how much the review changed it. Unlike the Review summary above, a priority or trade change counts here.</p>
   </div>
   <div class="tblwrap narrow">
     <table class="dt adj">
@@ -413,6 +509,12 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
   </div>
   <p class="after">Of the 219 minor adjustments, 191 changed only the priority and 28 only the description. The 12 snags with both a priority change and a description adjustment of 4 words or fewer are major adjustments.</p>
 </article>
+
+<section class="part" aria-labelledby="change-details">
+<div class="part-head">
+  <h2 id="change-details">Change details</h2>
+  <p class="card-sub">Each kind of change unit by unit: deletions, priority and trade changes, the review's change categories, the archived page's fields, who made each change, and worked examples.</p>
+</div>
 
 
 <article class="card">
@@ -871,6 +973,7 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.6px}
     <div class="ex-cols"><div class="ex-side is-ai"><h4>AI output</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Floor 3 / Accessible Roof</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Damaged</dd></div><div class="ex-f is-diff"><dt>Material or non-material</dt><dd>Material</dd></div><div class="ex-f"><dt>Description</dt><dd>stains on the cat lader</dd></div></dl></div><div class="ex-side is-man"><h4>Manual edit</h4><dl class="ex-dl"><div class="ex-f"><dt>Location</dt><dd>Floor 3 / Accessible Roof</dd></div><div class="ex-f"><dt>Trade</dt><dd>Civil</dd></div><div class="ex-f"><dt>Type</dt><dd>Wall - Damaged</dd></div><div class="ex-f is-diff"><dt>Material or non-material</dt><dd>Non material</dd></div><div class="ex-f"><dt>Description</dt><dd>stains on the cat lader</dd></div></dl></div></div>
   </div>
 </article></div>
+</section>
 
 </div>
 </body>

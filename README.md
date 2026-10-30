@@ -124,15 +124,27 @@ Hills – Gems E511B, read from each snag's change history in QA/QC. It is laid 
 like the archived review stats and shares its page rules (`PAGE_CSS` in
 `build_review.py`), with the review's own change categories.
 
-- **Outcomes** — every AI-generated material snag is deleted, changed (its
-  description or type was edited, or it was switched to non-material) or has
-  no change. Priority and trade changes are counted separately, so a snag whose
-  only change was its priority or trade counts as no change.
+- **Review summary** — every AI-generated material snag is deleted, changed
+  (its description or type was edited, or it was switched to non-material) or
+  has no change. Priority and trade changes are counted separately, so a snag
+  whose only change was its priority or trade counts as no change.
+- **Performance improvements** — a bar chart of each field's share of
+  material snags, and the shares accepted unchanged and deleted, on the archived
+  page's Malta villas (Q844, Q845, Q545: the August version, read from
+  `data/review-stats.json`) above the Ibiza units captured with Matterport
+  (T240, T242, T243, T245: the September version). Each row's percentage
+  improvement is the September share's fall below the August share (its rise,
+  for accepted unchanged) as a percentage of the August share; a field resting
+  on 10 or fewer snags a side shows — for not enough data. The two cover
+  different units, so it compares shares, not counts.
 - **All changes** — every material snag in one of four groups, with priority
   and trade counted: accepted as is; minor adjustment (a priority change, or a
   description adjustment of 1–4 words, and nothing else); major adjustment (any
   other change, or a combination of changes, such as a priority change with a
   1–4 word description adjustment); deleted.
+
+The rest sit under **Change details**:
+
 - **Deletions, Priority changes, Trade changes** — each as a share of the
   unit's material snags, with a bar.
 - **Changes by category** — material → non-material, type update, and large
