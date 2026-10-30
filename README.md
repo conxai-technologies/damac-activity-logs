@@ -128,11 +128,21 @@ like the archived review stats and shares its page rules (`PAGE_CSS` in
   description or type was edited, or it was switched to non-material) or has
   no change. Priority and trade changes are counted separately, so a snag whose
   only change was its priority or trade counts as no change.
+- **All changes** — every material snag in one of four groups, with priority
+  and trade counted: accepted as is; minor adjustment (a priority change, or a
+  description adjustment of 1–4 words, and nothing else); major adjustment (any
+  other change, or a combination of changes, such as a priority change with a
+  1–4 word description adjustment); deleted.
 - **Deletions, Priority changes, Trade changes** — each as a share of the
   unit's material snags, with a bar.
 - **Changes by category** — material → non-material, type update, and large
   (5 or more words) or small (1–4 words) description updates. A snag gets one
   description category, the highest of type > large > small.
+- **Changes by field** — the archived page's table on its rules: priority,
+  description (type included), trade, location and photo, with a kept snag
+  changed if any of them was edited. The review team edited no location or
+  photo (the change history's location edits are all automated updates), and a
+  switch to non-material is not an edit to any of the five fields.
 - **Changes by person** and four **example changes**.
 
 `data/review-timelines.json` is a snapshot of the QA/QC change history
