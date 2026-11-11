@@ -1,8 +1,8 @@
 """Chrome shared by every page of the site: tokens, masthead, tabs, footer.
 
 build_review_timelines.py (Review Stats, the landing page), build_time_motion.py (the two
-time and motion pages), build_performance_review.py (Performance review), build_review.py
-(Archived Review Stats) and build.py (Archived activities) each render their own body from
+time and motion pages), build_performance_review.py (Performance review), build_walkthrough.py
+(Workflow Walkthrough), build_review.py (Archived Review Stats) and build.py (Archived activities) each render their own body from
 their own data,
 but the frame around it lives here so the pages cannot drift apart.
 """
@@ -18,6 +18,7 @@ PAGES = [
     ("tm-ibiza", "Pilot time and motion Lagoons \u2013 Ibiza", "time-motion-ibiza.html"),
     ("tm-gems", "Pilot time and motion Hills \u2013 Gems", "time-motion-gems.html"),
     ("perf", "Performance review", "performance-review.html"),
+    ("walkthrough", "Workflow Walkthrough", "workflow-walkthrough.html"),
     ("review", "Archived Review Stats", "review-stats.html"),
     ("activity", "Archived activities", "activity-logs.html"),
 ]

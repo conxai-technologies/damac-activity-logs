@@ -1,6 +1,6 @@
 # DAMAC snagging pilot
 
-Six tabs, one masthead. Each page is a real file with its own URL, so any of
+Seven tabs, one masthead. Each page is a real file with its own URL, so any of
 them can be linked to on its own.
 
 **https://conxai-technologies.github.io/damac-activity-logs/**
@@ -11,6 +11,7 @@ them can be linked to on its own.
 | Pilot time and motion Lagoons – Ibiza | `time-motion-ibiza.html` | `data/qaqc-time-motion.xlsx` via `build_time_motion.py` |
 | Pilot time and motion Hills – Gems | `time-motion-gems.html` | the same workbook, same script |
 | Performance review | `performance-review.html`, and `performance-review-t240.html` etc. per unit | `data/performance-review.json` and `assets/performance-review/` via `build_performance_review.py` |
+| Workflow Walkthrough | `workflow-walkthrough.html` | `assets/walkthrough/` via `build_walkthrough.py` |
 | Archived Review Stats | `review-stats.html` | `data/review-stats.json` via `build_review.py` |
 | Archived activities | `activity-logs.html` | `data/activity-logs.csv` via `build.py` |
 
@@ -100,6 +101,20 @@ rule (or the one the evaluation linked, when that is its own dashboard snag and
 snag-match picked a different one), and deletions from the QA/QC change export
 of 28 Oct 2026. Each photo is a single 640 px copy, used for the thumbnail and
 the enlarged view alike, with the AI snag's boxes drawn over it on the page.
+
+## Workflow Walkthrough
+
+The AI-assisted handover walkthrough video (5 min 7 s): inspections, snagging,
+rectification, checks and sign-offs. The page is just the player, with a poster
+frame shown before it plays. The video is re-encoded from the 167 MB original
+to an H.264 MP4 at 1080p, small enough for GitHub (any file over 100 MB is
+refused, and over 50 MB draws a warning):
+
+```sh
+ffmpeg -i original.mp4 -map 0:v:0 -map 0:a:0 -map_metadata -1 -c:v libx264 -preset slow -crf 24 \
+  -profile:v high -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart \
+  assets/walkthrough/ai-assisted-handover-walkthrough.mp4
+```
 
 ## Archived activities
 
@@ -201,7 +216,7 @@ ones the page shows.
 
 Every page is generated. `build.py` builds archived activities and then calls
 `build_review.py`, `build_time_motion.py`, `build_review_timelines.py` and
-`build_performance_review.py`, so one command refreshes the site. Time and motion reads the workbook directly (cell fills included), which
+`build_performance_review.py` and `build_walkthrough.py`, so one command refreshes the site. Time and motion reads the workbook directly (cell fills included), which
 needs `openpyxl`:
 
 ```sh

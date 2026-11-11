@@ -17,6 +17,7 @@ import build_performance_review
 import build_review
 import build_review_timelines
 import build_time_motion
+import build_walkthrough
 import theme
 from theme import GENERATED, esc
 
@@ -743,6 +744,7 @@ def main():
     build_time_motion.main()
     build_review_timelines.main()
     build_performance_review.main()
+    build_walkthrough.main()
 
 
 if __name__ == "__main__":
