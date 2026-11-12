@@ -104,9 +104,9 @@ the enlarged view alike, with the AI snag's boxes drawn over it on the page.
 
 ## Workflow Walkthrough
 
-The AI-assisted handover walkthrough video (5 min 7 s): inspections, snagging,
+The AI-assisted handover walkthrough video (4 min 56 s): inspections, snagging,
 rectification, checks and sign-offs. The page is just the player, with a poster
-frame shown before it plays. The video is re-encoded from the 167 MB original
+frame shown before it plays. The video is re-encoded from the 163 MB original
 to an H.264 MP4 at 1080p, small enough for GitHub (any file over 100 MB is
 refused, and over 50 MB draws a warning):
 
