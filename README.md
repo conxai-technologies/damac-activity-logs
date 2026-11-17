@@ -104,11 +104,19 @@ the enlarged view alike, with the AI snag's boxes drawn over it on the page.
 
 ## Workflow Walkthrough
 
-The AI-assisted handover walkthrough video (4 min 56 s): inspections, snagging,
-rectification, checks and sign-offs. The page is just the player, with a poster
-frame shown before it plays. The video is re-encoded from the 163 MB original
-to an H.264 MP4 at 1080p, small enough for GitHub (any file over 100 MB is
-refused, and over 50 MB draws a warning):
+Two videos of the AI-assisted handover (inspections, snagging, rectification,
+checks and sign-offs), short first, each with its title card as a poster frame
+shown before it plays (`VIDEOS` in `build_walkthrough.py`):
+
+- **AI-Powered Snagging & De-snagging: Pilot Walkthrough** (3 min 47 s) —
+  `assets/walkthrough/ai-assisted-handover-walkthrough.mp4`, poster `poster.jpg`
+- **AI-Powered Handover Pipeline: Full Workflow** (4 min 48 s) —
+  `assets/walkthrough/full-workflow.mp4`, poster `poster-full.jpg`
+
+Each video is re-encoded from its original to an H.264 MP4 at 1080p, small
+enough for GitHub (any file over 100 MB is refused, and over 50 MB draws a
+warning). Files are stored directly in the repo, not in Git LFS, because
+GitHub Pages does not serve LFS files:
 
 ```sh
 ffmpeg -i original.mp4 -map 0:v:0 -map 0:a:0 -map_metadata -1 -c:v libx264 -preset slow -crf 24 \
